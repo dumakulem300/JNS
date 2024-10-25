@@ -1,0 +1,744 @@
+<html><head><base href="." /><title>JNS Rewards System - Login</title>
+  <style>
+  :root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #252525;
+    --text-primary: #ffffff;
+    --accent: #7c4dff;
+    --error: #ff4d4d;
+    --success: #4dff4d;
+  }
+  
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('/a/0d67403a-a8c1-4e8e-8155-b2c37ba88d23');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+  }
+  
+  .auth-form {
+    background: rgba(37, 37, 37, 0.95);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    backdrop-filter: blur(5px);
+  }
+  
+  h1 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--accent);
+  }
+  
+  .input-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #444;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 5px;
+    outline: none;
+  }
+  
+  .input-group input:focus {
+    border-color: var(--accent);
+  }
+  
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: opacity 0.2s;
+  }
+  
+  button:hover {
+    opacity: 0.9;
+  }
+  
+  .switch-form {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .switch-form a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  
+  /* Admin styles */
+  .admin-panel {
+    display: none;
+    max-width: 800px;
+    background: rgba(37, 37, 37, 0.95);
+    backdrop-filter: blur(5px);
+    padding: 2rem;
+    border-radius: 10px;
+  }
+  
+  .user-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  
+  .user-list th, .user-list td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid #444;
+  }
+  
+  .action-btn {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    border-radius: 3px;
+  }
+  
+  .delete-btn {
+    background: var(--error);
+  }
+  
+  .reset-btn {
+    background: var(--accent);
+  }
+  
+  .points {
+    color: var(--accent);
+    font-weight: bold;
+  }
+  
+  .notifications {
+    margin-bottom: 2rem;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .notification {
+    background: rgba(26, 26, 26, 0.95);
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 5px;
+    border-left: 3px solid var(--accent);
+  }
+
+  .notification-time {
+    color: #888;
+    font-size: 0.8rem;
+  }
+
+  /* Add this to the existing CSS */
+  .warning-message {
+    background: rgba(37, 37, 37, 0.95);
+    border-left: 4px solid var(--error);
+    padding: 1rem;
+    margin-top: 1rem;
+    border-radius: 5px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    backdrop-filter: blur(5px);
+  }
+
+  .warning-message strong {
+    color: var(--error);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Add this to the existing CSS */
+  .leaderboard {
+    background: rgba(37, 37, 37, 0.95);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-top: 1rem;
+    backdrop-filter: blur(5px);
+  }
+
+  .leaderboard h2 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .leaderboard-list {
+    list-style: none;
+  }
+
+  .leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #444;
+    transition: background-color 0.2s;
+  }
+
+  .leaderboard-item:hover {
+    background: rgba(124, 77, 255, 0.1);
+  }
+
+  .leaderboard-rank {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent);
+    width: 40px;
+  }
+
+  .leaderboard-username {
+    flex-grow: 1;
+    margin-left: 1rem;
+  }
+
+  .leaderboard-points {
+    font-weight: bold;
+    color: var(--accent);
+  }
+
+  .leaderboard-item.current-user {
+    background: rgba(124, 77, 255, 0.2);
+    border-left: 3px solid var(--accent);
+  }
+
+  .timer-container {
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .timer-display {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(124, 77, 255, 0.3);
+    margin-bottom: 0.5rem;
+  }
+
+  .timer-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba(124, 77, 255, 0.2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  #timerProgressBar {
+    height: 100%;
+    background: var(--accent);
+    width: 100%;
+    transition: width 1s linear;
+  }
+  </style>
+  </head>
+  <body>
+  <div class="container" id="loginContainer">
+    <form class="auth-form" id="loginForm">
+      <h1>JNS Internet Shop</h1>
+      <h2>Claim your points!!!</h2>
+      <div class="input-group">
+        <label for="loginUsername">Username</label>
+        <input type="text" id="loginUsername" required>
+      </div>
+      <div class="input-group">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <button type="submit">Login</button>
+      <div class="switch-form">
+        <a href="#" id="showRegister">Need an account? Register</a>
+      </div>
+    </form>
+  </div>
+  
+  <div class="container" id="registerContainer" style="display: none;">
+    <form class="auth-form" id="registerForm">
+      <h1>Register</h1>
+      <div class="input-group">
+        <label for="regUsername">Username</label>
+        <input type="text" id="regUsername" required>
+      </div>
+      <div class="input-group">
+        <label for="regPassword">Password</label>
+        <input type="password" id="regPassword" required>
+      </div>
+      <button type="submit">Register</button>
+      <div class="switch-form">
+        <a href="#" id="showLogin">Already have an account? Login</a>
+      </div>
+    </form>
+  </div>
+  
+  <div class="container admin-panel" id="adminContainer">
+    <h1>Admin Panel</h1>
+    <div class="notifications" id="adminNotifications">
+      <h2>Recent Claims</h2>
+      <!-- Notifications will be inserted here -->
+    </div>
+    <button id="adminLogout" style="margin-bottom: 1rem;">Logout</button>
+    <table class="user-list">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Points</th>
+          <th>Last Claim</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userList"></tbody>
+    </table>
+  </div>
+  
+  <div class="container" id="userDashboard" style="display: none;">
+    <div class="auth-form">
+      <h1>Welcome <span id="userDisplayName"></span></h1>
+      <p>Your Points: <span id="userPoints" class="points">0</span></p>
+      
+      <div class="timer-container">
+        <div class="timer-display">
+          <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
+        </div>
+        <div class="timer-progress">
+          <div id="timerProgressBar"></div>
+        </div>
+      </div>
+      
+      <button id="userLogout" style="margin-top: 1rem;">Logout</button>
+    </div>
+    <div class="warning-message">
+      <strong>⚠️ WARNING:</strong>
+      Wag mag claim kung hindi naglaro, I baban ko ang gumawa.<br>
+      Mag claim lang Kapag naglaro, Salamat po!
+    </div>
+    <div class="leaderboard">
+      <h2>🏆 Top 10 Players</h2>
+      <ul class="leaderboard-list" id="leaderboardList">
+        <!-- Leaderboard items will be inserted here -->
+      </ul>
+    </div>
+  </div>
+  
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getDatabase, ref, set, get, child, remove, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
+    authDomain: "jns-reward-points.firebaseapp.com",
+    databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "jns-reward-points",
+    storageBucket: "jns-reward-points.appspot.com",
+    messagingSenderId: "856311133669",
+    appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
+    measurementId: "G-KD8HC3H0J1"
+  };
+  
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  
+  // UI Elements
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const showRegisterLink = document.getElementById('showRegister');
+  const showLoginLink = document.getElementById('showLogin');
+  const adminContainer = document.getElementById('adminContainer');
+  const userDashboard = document.getElementById('userDashboard');
+  const loginContainer = document.getElementById('loginContainer');
+  const registerContainer = document.getElementById('registerContainer');
+  
+  // Switch between login and register forms
+  showRegisterLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginContainer.style.display = 'none';
+    registerContainer.style.display = 'block';
+  });
+  
+  showLoginLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginContainer.style.display = 'block';
+    registerContainer.style.display = 'none';
+  });
+  
+  // Register new user
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('regUsername').value;
+    const password = document.getElementById('regPassword').value;
+  
+    try {
+      const userRef = ref(db, 'users/' + username);
+      const snapshot = await get(userRef);
+      
+      if (snapshot.exists()) {
+        alert('Username already exists!');
+        return;
+      }
+  
+      await set(userRef, {
+        username,
+        password,
+        points: 0,
+        lastClaim: null
+      });
+  
+      alert('Registration successful!');
+      registerForm.reset();
+      loginContainer.style.display = 'block';
+      registerContainer.style.display = 'none';
+    } catch (error) {
+      console.error(error);
+      alert('Registration failed!');
+    }
+  });
+  
+  // Create notification
+  async function createNotification(username, points) {
+    try {
+      const notificationsRef = ref(db, 'notifications');
+      const newNotificationRef = push(notificationsRef);
+      await set(newNotificationRef, {
+        username,
+        points,
+        timestamp: new Date().toISOString(),
+        read: false
+      });
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+    }
+  }
+
+  // Load notifications
+  async function loadNotifications() {
+    try {
+      const notificationsRef = ref(db, 'notifications');
+      const notificationsDiv = document.getElementById('adminNotifications');
+      
+      // Real-time listener for notifications
+      onValue(notificationsRef, (snapshot) => {
+        notificationsDiv.innerHTML = '<h2>Recent Claims</h2>';
+        
+        if (snapshot.exists()) {
+          const notifications = [];
+          snapshot.forEach((child) => {
+            notifications.push({ id: child.key, ...child.val() });
+          });
+          
+          // Sort notifications by timestamp, newest first
+          notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+          
+          notifications.forEach((notification) => {
+            const notificationEl = document.createElement('div');
+            notificationEl.className = 'notification';
+            notificationEl.innerHTML = `
+              <div>User <strong>${notification.username}</strong> claimed their daily point</div>
+              <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
+            `;
+            notificationsDiv.appendChild(notificationEl);
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  }
+
+  // Load user list and notifications
+  async function loadUserList() {
+    const userList = document.getElementById('userList');
+    userList.innerHTML = '';
+  
+    try {
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const user = child.val();
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${user.username}</td>
+            <td>${user.points || 0}</td>
+            <td>${user.lastClaim ? new Date(user.lastClaim).toLocaleDateString() : 'Never'}</td>
+            <td>
+              <button class="action-btn reset-btn" onclick="window.resetPoints('${user.username}')">Reset</button>
+              <button class="action-btn delete-btn" onclick="window.deleteUser('${user.username}')">Delete</button>
+            </td>
+          `;
+          userList.appendChild(row);
+        });
+      }
+      loadNotifications(); // Load notifications
+    } catch (error) {
+      console.error(error);
+      alert('Failed to load user list!');
+    }
+  }
+
+  // Update leaderboard
+  async function updateLeaderboard() {
+    try {
+      const usersRef = ref(db, 'users');
+      const currentUser = sessionStorage.getItem('currentUser');
+      const leaderboardList = document.getElementById('leaderboardList');
+      
+      onValue(usersRef, (snapshot) => {
+        if (snapshot.exists()) {
+          // Convert to array and sort by points
+          const users = [];
+          snapshot.forEach((child) => {
+            users.push({
+              username: child.val().username,
+              points: child.val().points || 0
+            });
+          });
+          
+          users.sort((a, b) => b.points - a.points);
+          
+          // Take top 10
+          const top10 = users.slice(0, 10);
+          
+          // Clear and rebuild leaderboard
+          leaderboardList.innerHTML = '';
+          
+          top10.forEach((user, index) => {
+            const li = document.createElement('li');
+            li.className = `leaderboard-item${user.username === currentUser ? ' current-user' : ''}`;
+            li.innerHTML = `
+              <span class="leaderboard-rank">#${index + 1}</span>
+              <span class="leaderboard-username">${user.username}</span>
+              <span class="leaderboard-points">${user.points} pts</span>
+            `;
+            leaderboardList.appendChild(li);
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to update leaderboard:', error);
+    }
+  }
+
+  // Login
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+  
+    if (username === 'lem' && password === 'lem1234') {
+      loginContainer.style.display = 'none';
+      adminContainer.style.display = 'block';
+      loadUserList();
+      return;
+    }
+  
+    try {
+      const userRef = ref(db, 'users/' + username);
+      const snapshot = await get(userRef);
+      
+      if (!snapshot.exists()) {
+        alert('User not found!');
+        return;
+      }
+  
+      const userData = snapshot.val();
+      if (userData.password !== password) {
+        alert('Invalid password!');
+        return;
+      }
+  
+      document.getElementById('userDisplayName').textContent = username;
+      document.getElementById('userPoints').textContent = userData.points || 0;
+      loginContainer.style.display = 'none';
+      userDashboard.style.display = 'block';
+      
+      // Store current user
+      sessionStorage.setItem('currentUser', username);
+      updateLeaderboard();
+      initializeTimer(); // Add this line
+    } catch (error) {
+      console.error(error);
+      alert('Login failed!');
+    }
+  });
+  
+  // Admin functions
+  window.resetPoints = async (username) => {
+    try {
+      await update(ref(db, 'users/' + username), { points: 0, lastClaim: null });
+      alert('Points reset successfully!');
+      loadUserList();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to reset points!');
+    }
+  };
+  
+  window.deleteUser = async (username) => {
+    if (!confirm(`Are you sure you want to delete user ${username}?`)) return;
+    
+    try {
+      await remove(ref(db, 'users/' + username));
+      alert('User deleted successfully!');
+      loadUserList();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to delete user!');
+    }
+  };
+  
+  // Logout functions
+  document.getElementById('adminLogout').addEventListener('click', () => {
+    adminContainer.style.display = 'none';
+    loginContainer.style.display = 'block';
+    loginForm.reset();
+  });
+  
+  document.getElementById('userLogout').addEventListener('click', async () => {
+    await saveTimerState();
+    userDashboard.style.display = 'none';
+    loginContainer.style.display = 'block';
+    loginForm.reset();
+    sessionStorage.removeItem('currentUser');
+    clearInterval(timerInterval);
+  });
+  
+  // Timer functions
+  let timerInterval;
+  const TOTAL_TIME = 3600; // 1 hour in seconds
+  let timeRemaining = TOTAL_TIME;
+
+  async function initializeTimer() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : new Date(0);
+      const now = new Date();
+      
+      // Check if already claimed today
+      if (lastClaim.toDateString() === now.toDateString()) {
+        displayTimer(0);
+        return;
+      }
+
+      // Load saved timer state
+      if (userData.timerState) {
+        const elapsed = Math.floor((now - new Date(userData.timerState.lastUpdated)) / 1000);
+        timeRemaining = Math.max(0, userData.timerState.timeRemaining - elapsed);
+      }
+
+      startTimer();
+    } catch (error) {
+      console.error('Timer initialization failed:', error);
+    }
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    displayTimer(timeRemaining);
+    
+    timerInterval = setInterval(async () => {
+      timeRemaining--;
+      displayTimer(timeRemaining);
+      
+      // Save timer state periodically
+      if (timeRemaining % 10 === 0) {
+        await saveTimerState();
+      }
+
+      if (timeRemaining <= 0) {
+        clearInterval(timerInterval);
+        await awardPoint();
+      }
+    }, 1000);
+  }
+
+  function displayTimer(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    document.getElementById('timerMinutes').textContent = String(minutes).padStart(2, '0');
+    document.getElementById('timerSeconds').textContent = String(remainingSeconds).padStart(2, '0');
+    
+    const progress = (seconds / TOTAL_TIME) * 100;
+    document.getElementById('timerProgressBar').style.width = `${progress}%`;
+  }
+
+  async function saveTimerState() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      await update(ref(db, `users/${username}`), {
+        timerState: {
+          timeRemaining,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Failed to save timer state:', error);
+    }
+  }
+
+  async function awardPoint() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      const newPoints = (userData.points || 0) + 1;
+      await update(userRef, {
+        points: newPoints,
+        lastClaim: new Date().toISOString(),
+        timerState: null
+      });
+
+      document.getElementById('userPoints').textContent = newPoints;
+      await createNotification(username, newPoints);
+      updateLeaderboard();
+    } catch (error) {
+      console.error('Failed to award point:', error);
+    }
+  }
+
+  // Add window beforeunload handler
+  window.addEventListener('beforeunload', async () => {
+    await saveTimerState();
+  });
+  </script>
+  </body>
+  </html>
