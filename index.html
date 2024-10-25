@@ -257,13 +257,77 @@
     width: 100%;
     transition: width 1s linear;
   }
+  
+  .bonus-controls {
+    background: rgba(37, 37, 37, 0.95);
+    padding: 1rem;
+    border-radius: 5px;
+    margin: 1rem 0;
+  }
+
+  .bonus-controls h3 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .bonus-controls .input-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .bonus-controls input {
+    flex: 2;
+    padding: 0.75rem;
+    border: 1px solid #444;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 5px;
+    outline: none;
+  }
+
+  .bonus-controls .action-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .bonus-controls select {
+    padding: 0.75rem;
+    border: 1px solid #444;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 5px;
+    outline: none;
+  }
+
+  .bonus-controls select:focus {
+    border-color: var(--accent);
+  }
+
+  .bonus-section {
+    background: rgba(37, 37, 37, 0.95);
+    padding: 1rem;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .bonus-amount {
+    font-size: 1.2rem;
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  #claimBonusBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   </style>
   </head>
   <body>
   <div class="container" id="loginContainer">
     <form class="auth-form" id="loginForm">
       <h1>JNS Internet Shop</h1>
-      <h2>Claim your points!!!</h2>      
+      <h2>Claim your points!!!</h2>
       <div class="input-group">
         <label for="loginUsername">Username</label>
         <input type="text" id="loginUsername" required>
@@ -304,6 +368,19 @@
       <!-- Notifications will be inserted here -->
     </div>
     <button id="adminLogout" style="margin-bottom: 1rem;">Logout</button>
+    <div class="bonus-controls">
+      <h3>Give Bonus Points</h3>
+      <div class="input-group">
+        <input type="number" id="bonusPoints" min="1" placeholder="Enter bonus points">
+        <button id="giveBonusBtn" class="action-btn reset-btn">Give Bonus</button>
+      </div>
+      <div class="input-group" style="margin-top: 1rem;">
+        <select id="userSelect" style="flex: 2;">
+          <option value="">Select User</option>
+        </select>
+        <button id="addBonusToUserBtn" class="action-btn reset-btn">Add Bonus</button>
+      </div>
+    </div>
     <table class="user-list">
       <thead>
         <tr>
@@ -319,6 +396,10 @@
   
   <div class="container" id="userDashboard" style="display: none;">
     <div class="auth-form">
+      <div class="bonus-section" style="margin-bottom: 1rem;">
+        <div class="bonus-amount">Available Bonus: <span id="availableBonus">0</span></div>
+        <button id="claimBonusBtn" class="action-btn reset-btn" style="margin-top: 0.5rem;">Claim Bonus</button>
+      </div>
       <h1>Welcome <span id="userDisplayName"></span></h1>
       <p>Your Points: <span id="userPoints" class="points">0</span></p>
       
@@ -335,8 +416,10 @@
     </div>
     <div class="warning-message">
       <strong>⚠️ WARNING:</strong>
-      Wag mag claim kung hindi naglaro, I baban ko ang gumawa.<br>
-      Mag claim lang Kapag naglaro, Salamat po!
+      Pede ma ban ang mahuhuling mandaya sa pagkuha ng points.<br>
+      Mag login lang kapag naglaro!,
+      Bawal mag register ng dalawa o maraming account,
+      Sa internet shop lang pede iopen ang reward app
     </div>
     <div class="leaderboard">
       <h2>🏆 Top 10 Players</h2>
@@ -406,7 +489,9 @@
         username,
         password,
         points: 0,
-        lastClaim: null
+        availableBonus: 0, // Add available bonus field
+        lastClaim: null,
+        lastBonusClaim: null
       });
   
       alert('Registration successful!');
@@ -471,7 +556,7 @@
   }
 
   // Load user list and notifications
-  async function loadUserList() {
+  const loadUserList = async () => {
     const userList = document.getElementById('userList');
     userList.innerHTML = '';
   
@@ -495,12 +580,63 @@
           userList.appendChild(row);
         });
       }
+      updateUserSelect(); // Add this line to update dropdown when user list loads
       loadNotifications(); // Load notifications
     } catch (error) {
       console.error(error);
       alert('Failed to load user list!');
     }
   }
+
+  // Update user select dropdown
+  function updateUserSelect() {
+    const userSelect = document.getElementById('userSelect');
+    
+    // Clear existing options except the first one
+    while (userSelect.options.length > 1) {
+      userSelect.remove(1);
+    }
+    
+    // Get users and add to dropdown
+    get(ref(db, 'users')).then((snapshot) => {
+      if (snapshot.exists()) {
+        snapshot.forEach((child) => {
+          const user = child.val();
+          const option = document.createElement('option');
+          option.value = user.username;
+          option.textContent = user.username;
+          userSelect.appendChild(option);
+        });
+      }
+    }).catch((error) => {
+      console.error('Failed to load users for dropdown:', error);
+    });
+  }
+
+  // Add bonus to specific user
+  document.getElementById('addBonusToUserBtn').addEventListener('click', async () => {
+    const selectedUser = document.getElementById('userSelect').value;
+    const bonusAmount = parseInt(document.getElementById('bonusPoints').value);
+    
+    if (!selectedUser) {
+      alert('Please select a user');
+      return;
+    }
+    
+    if (!bonusAmount || bonusAmount <= 0) {
+      alert('Please enter a valid bonus amount');
+      return;
+    }
+
+    try {
+      const userBonusRef = ref(db, `users/${selectedUser}/availableBonus`);
+      await set(userBonusRef, bonusAmount);
+      alert(`Bonus of ${bonusAmount} points set for user ${selectedUser}`);
+    } catch (error) {
+      console.error('Failed to set user bonus:', error);
+      alert('Failed to set user bonus');
+    }
+  });
 
   // Update leaderboard
   async function updateLeaderboard() {
@@ -577,17 +713,84 @@
       document.getElementById('userPoints').textContent = userData.points || 0;
       loginContainer.style.display = 'none';
       userDashboard.style.display = 'block';
-      
+
       // Store current user
       sessionStorage.setItem('currentUser', username);
       updateLeaderboard();
+      checkAndUpdateBonus(); // Add this line
       initializeTimer(); // Add this line
     } catch (error) {
       console.error(error);
       alert('Login failed!');
     }
   });
-  
+
+  // Check and update bonus
+  async function checkAndUpdateBonus() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      
+      onValue(userRef, (snapshot) => {
+        const userData = snapshot.val();
+        const availableBonus = userData.availableBonus || 0;
+        const lastBonusClaim = userData.lastBonusClaim ? new Date(userData.lastBonusClaim) : new Date(0);
+        const today = new Date();
+        
+        // Update UI
+        document.getElementById('availableBonus').textContent = availableBonus;
+        document.getElementById('claimBonusBtn').disabled = lastBonusClaim.toDateString() === today.toDateString();
+      });
+    } catch (error) {
+      console.error('Failed to check bonus:', error);
+    }
+  }
+
+  document.getElementById('claimBonusBtn').addEventListener('click', async () => {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+      
+      const lastBonusClaim = userData.lastBonusClaim ? new Date(userData.lastBonusClaim) : new Date(0);
+      const today = new Date();
+
+      if (lastBonusClaim.toDateString() === today.toDateString()) {
+        alert('You have already claimed your bonus today');
+        return;
+      }
+
+      const availableBonus = userData.availableBonus || 0;
+      if (availableBonus <= 0) {
+        alert('No bonus available to claim');
+        return;
+      }
+
+      // Update user points and clear bonus
+      const newPoints = (userData.points || 0) + availableBonus;
+      await update(userRef, {
+        points: newPoints,
+        availableBonus: 0,
+        lastBonusClaim: today.toISOString()
+      });
+
+      document.getElementById('userPoints').textContent = newPoints;
+      document.getElementById('claimBonusBtn').disabled = true;
+      document.getElementById('availableBonus').textContent = '0';
+      
+      alert(`Successfully claimed ${availableBonus} bonus points!`);
+      updateLeaderboard();
+    } catch (error) {
+      console.error('Failed to claim bonus:', error);
+      alert('Failed to claim bonus');
+    }
+  });
+
   // Admin functions
   window.resetPoints = async (username) => {
     try {
