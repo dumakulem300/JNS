@@ -23,7 +23,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: url('/a/0d67403a-a8c1-4e8e-8155-b2c37ba88d23');
+    background-image: url('desktop-wallpaper-on-roblox-kids-learn-it-s-hard-to-earn-money-making-games.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -321,6 +321,29 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  /* Add this to the existing CSS */
+  .start-timer-btn {
+    background: #ff7043; 
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .start-timer-btn:hover {
+    background: #f4511e;
+  }
+
+  .start-timer-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   </style>
   </head>
   <body>
@@ -396,6 +419,7 @@
   
   <div class="container" id="userDashboard" style="display: none;">
     <div class="auth-form">
+      <button id="startTimerBtn" class="start-timer-btn">Start Timer</button>
       <div class="bonus-section" style="margin-bottom: 1rem;">
         <div class="bonus-amount">Available Bonus: <span id="availableBonus">0</span></div>
         <button id="claimBonusBtn" class="action-btn reset-btn" style="margin-top: 0.5rem;">Claim Bonus</button>
@@ -446,6 +470,9 @@
   
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
+
+  let leaderboardListener = null; // Add this line to track the listener
+  let notificationsListener = null; // Add this line to track notifications listener
   
   // UI Elements
   const loginForm = document.getElementById('loginForm');
@@ -526,8 +553,17 @@
       const notificationsRef = ref(db, 'notifications');
       const notificationsDiv = document.getElementById('adminNotifications');
       
-      // Real-time listener for notifications
-      onValue(notificationsRef, (snapshot) => {
+      if (!notificationsDiv) return;
+      
+      // Remove existing listener if it exists
+      if (notificationsListener) {
+        notificationsListener();
+      }
+      
+      // Store the new listener
+      notificationsListener = onValue(notificationsRef, (snapshot) => {
+        if (!notificationsDiv) return;
+        
         notificationsDiv.innerHTML = '<h2>Recent Claims</h2>';
         
         if (snapshot.exists()) {
@@ -536,7 +572,6 @@
             notifications.push({ id: child.key, ...child.val() });
           });
           
-          // Sort notifications by timestamp, newest first
           notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
           
           notifications.forEach((notification) => {
@@ -638,6 +673,37 @@
     }
   });
 
+  // Modify the give bonus button click handler
+  document.getElementById('giveBonusBtn').addEventListener('click', async () => {
+    const bonusAmount = parseInt(document.getElementById('bonusPoints').value);
+    
+    if (!bonusAmount || bonusAmount <= 0) {
+      alert('Please enter a valid bonus amount');
+      return;
+    }
+
+    try {
+      const usersRef = ref(db, 'users');
+      const snapshot = await get(usersRef);
+      
+      if (snapshot.exists()) {
+        const updates = {};
+        
+        snapshot.forEach((child) => {
+          updates[`users/${child.key}/availableBonus`] = bonusAmount;
+        });
+        
+        // Update all users simultaneously
+        await update(ref(db), updates);
+        alert(`Bonus of ${bonusAmount} points set for all users`);
+        document.getElementById('bonusPoints').value = ''; // Clear input
+      }
+    } catch (error) {
+      console.error('Failed to distribute bonus:', error);
+      alert('Failed to distribute bonus to users');
+    }
+  });
+
   // Update leaderboard
   async function updateLeaderboard() {
     try {
@@ -645,9 +711,18 @@
       const currentUser = sessionStorage.getItem('currentUser');
       const leaderboardList = document.getElementById('leaderboardList');
       
-      onValue(usersRef, (snapshot) => {
+      if (!leaderboardList) return; // Add null check
+      
+      // Remove existing listener if it exists
+      if (leaderboardListener) {
+        leaderboardListener();
+      }
+      
+      // Store the new listener
+      leaderboardListener = onValue(usersRef, (snapshot) => {
+        if (!leaderboardList) return; // Add null check
+        
         if (snapshot.exists()) {
-          // Convert to array and sort by points
           const users = [];
           snapshot.forEach((child) => {
             users.push({
@@ -657,11 +732,8 @@
           });
           
           users.sort((a, b) => b.points - a.points);
-          
-          // Take top 10
           const top10 = users.slice(0, 10);
           
-          // Clear and rebuild leaderboard
           leaderboardList.innerHTML = '';
           
           top10.forEach((user, index) => {
@@ -716,6 +788,7 @@
 
       // Store current user
       sessionStorage.setItem('currentUser', username);
+      checkStartTimerButton(); // Add this line to check timer button state
       updateLeaderboard();
       checkAndUpdateBonus(); // Add this line
       initializeTimer(); // Add this line
@@ -791,6 +864,65 @@
     }
   });
 
+  // Check start timer button state
+  async function checkStartTimerButton() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      
+      onValue(userRef, (snapshot) => {
+        const userData = snapshot.val();
+        const lastTimerStart = userData.lastTimerStart ? new Date(userData.lastTimerStart) : new Date(0);
+        const today = new Date();
+        
+        // Disable button if already used today
+        document.getElementById('startTimerBtn').disabled = lastTimerStart.toDateString() === today.toDateString();
+      });
+    } catch (error) {
+      console.error('Failed to check timer button state:', error);
+    }
+  }
+
+  // Start timer button functionality
+  document.getElementById('startTimerBtn').addEventListener('click', async () => {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+      
+      const lastTimerStart = userData.lastTimerStart ? new Date(userData.lastTimerStart) : new Date(0);
+      const today = new Date();
+
+      if (lastTimerStart.toDateString() === today.toDateString()) {
+        alert('You can only start the timer once per day');
+        return;
+      }
+
+      // Update lastTimerStart and remove both lastBonusClaim and lastClaim
+      await update(userRef, {
+        lastTimerStart: today.toISOString(),
+        lastBonusClaim: null,
+        lastClaim: null  // Added this line to delete lastClaim
+      });
+
+      document.getElementById('startTimerBtn').disabled = true;
+      alert('Timer reset successful! You can now start a new timer session.');
+      
+      // Refresh bonus claim button state and reinitialize timer
+      checkAndUpdateBonus();
+      timeRemaining = TOTAL_TIME;  // Reset timer to full duration
+      initializeTimer();  // Restart timer
+    } catch (error) {
+      console.error('Failed to start timer:', error);
+      alert('Failed to start timer');
+    }
+  });
+
   // Admin functions
   window.resetPoints = async (username) => {
     try {
@@ -817,13 +949,22 @@
   };
   
   // Logout functions
-  document.getElementById('adminLogout').addEventListener('click', () => {
+  document.getElementById('adminLogout')?.addEventListener('click', () => {
+    if (notificationsListener) {
+      notificationsListener();
+      notificationsListener = null; // Clear the reference
+    }
     adminContainer.style.display = 'none';
     loginContainer.style.display = 'block';
     loginForm.reset();
   });
   
-  document.getElementById('userLogout').addEventListener('click', async () => {
+  document.getElementById('userLogout')?.addEventListener('click', async () => {
+    // Remove leaderboard listener if it exists
+    if (leaderboardListener) {
+      leaderboardListener();
+      leaderboardListener = null; // Clear the reference
+    }
     await saveTimerState();
     userDashboard.style.display = 'none';
     loginContainer.style.display = 'block';
@@ -903,6 +1044,9 @@
     if (!username) return;
 
     try {
+      // Check if timeRemaining is defined
+      if (typeof timeRemaining === 'undefined') return;
+
       await update(ref(db, `users/${username}`), {
         timerState: {
           timeRemaining,
