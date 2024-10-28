@@ -23,7 +23,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: url('desktop-wallpaper-on-roblox-kids-learn-it-s-hard-to-earn-money-making-games.jpg');
+    background-image: url('/a/0d67403a-a8c1-4e8e-8155-b2c37ba88d23');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -344,6 +344,104 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  /* Add to existing CSS */
+  .roulette-container {
+    margin: 2rem 0;
+    text-align: center;
+  }
+
+  .roulette-wheel {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 10px solid var(--accent);
+    margin: 0 auto;
+    position: relative;
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    background: var(--bg-secondary);
+  }
+
+  .wheel-section {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    clip-path: polygon(100% 50%, 50% 50%, 50% 0%);
+    transform-origin: bottom right;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .wheel-pointer {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 20px solid var(--accent);
+  }
+
+  .spin-btn {
+    background: var(--accent);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: all 0.2s;
+  }
+
+  .spin-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .points-display {
+    display: flex;
+    justify-content: space-around;
+    margin: 1rem 0;
+  }
+
+  .points-item {
+    text-align: center;
+  }
+
+  .points-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent);
+  }
+
+  .donation-container {
+    margin-top: 2rem;
+    background: rgba(37, 37, 37, 0.95);
+    padding: 1.5rem;
+    border-radius: 10px;
+  }
+
+  .donation-container h3 {
+    color: var(--accent);
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .donation-info {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #888;
+    text-align: center;
+  }
   </style>
   </head>
   <body>
@@ -425,7 +523,17 @@
         <button id="claimBonusBtn" class="action-btn reset-btn" style="margin-top: 0.5rem;">Claim Bonus</button>
       </div>
       <h1>Welcome <span id="userDisplayName"></span></h1>
-      <p>Your Points: <span id="userPoints" class="points">0</span></p>
+      
+      <div class="points-display">
+        <div class="points-item">
+          <div>Regular Points</div>
+          <div id="userRegPoints" class="points-value">0</div>
+        </div>
+        <div class="points-item">
+          <div>Star Points</div>
+          <div id="userStarPoints" class="points-value">0</div>
+        </div>
+      </div>
       
       <div class="timer-container">
         <div class="timer-display">
@@ -433,6 +541,26 @@
         </div>
         <div class="timer-progress">
           <div id="timerProgressBar"></div>
+        </div>
+      </div>
+      
+      <div class="roulette-container">
+        <div class="roulette-wheel">
+          <div class="wheel-pointer"></div>
+          <!-- Wheel sections will be added dynamically -->
+        </div>
+        <button id="spinBtn" class="spin-btn">Spin the Wheel!</button>
+      </div>
+      
+      <div class="donation-container">
+        <h3>Donate Star Points</h3>
+        <div class="input-group">
+          <input type="text" id="donateUsername" placeholder="Enter username to donate to">
+          <button id="donateBtn" class="action-btn reset-btn">Donate 25 Points (Cost: 50)</button>
+        </div>
+        <div class="donation-info">
+          Each donation costs 50 star points (25 points donated + 25 points fee)
+          and gives you 1 free spin!
         </div>
       </div>
       
@@ -497,6 +625,11 @@
     registerContainer.style.display = 'none';
   });
   
+  // Add this function for random time generation
+  function getRandomTime() {
+    return Math.floor(Math.random() * (60 - 42 + 1) + 42) * 60;
+  }
+
   // Register new user
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -512,13 +645,17 @@
         return;
       }
   
+      // Initialize user with lastSpin as null to allow first spin
       await set(userRef, {
         username,
         password,
         points: 0,
-        availableBonus: 0, // Add available bonus field
+        starPoints: 0,
+        availableBonus: 0,
         lastClaim: null,
-        lastBonusClaim: null
+        lastBonusClaim: null,
+        lastSpin: null,  // Explicitly set lastSpin as null
+        timerState: null
       });
   
       alert('Registration successful!');
@@ -711,7 +848,7 @@
       const currentUser = sessionStorage.getItem('currentUser');
       const leaderboardList = document.getElementById('leaderboardList');
       
-      if (!leaderboardList) return; // Add null check
+      if (!leaderboardList) return; // Early return if element doesn't exist
       
       // Remove existing listener if it exists
       if (leaderboardListener) {
@@ -720,20 +857,26 @@
       
       // Store the new listener
       leaderboardListener = onValue(usersRef, (snapshot) => {
-        if (!leaderboardList) return; // Add null check
+        const leaderboardList = document.getElementById('leaderboardList');
+        if (!leaderboardList) return; // Check again inside callback
         
         if (snapshot.exists()) {
           const users = [];
           snapshot.forEach((child) => {
             users.push({
               username: child.val().username,
-              points: child.val().points || 0
+              points: child.val().points || 0,
+              starPoints: child.val().starPoints || 0
             });
           });
           
-          users.sort((a, b) => b.points - a.points);
-          const top10 = users.slice(0, 10);
+          // Sort by regular points first, then star points
+          users.sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return b.starPoints - a.starPoints;
+          });
           
+          const top10 = users.slice(0, 10);
           leaderboardList.innerHTML = '';
           
           top10.forEach((user, index) => {
@@ -742,7 +885,7 @@
             li.innerHTML = `
               <span class="leaderboard-rank">#${index + 1}</span>
               <span class="leaderboard-username">${user.username}</span>
-              <span class="leaderboard-points">${user.points} pts</span>
+              <span class="leaderboard-points">${user.points} pts | ⭐ ${user.starPoints}</span>
             `;
             leaderboardList.appendChild(li);
           });
@@ -753,19 +896,32 @@
     }
   }
 
-  // Login
+  // Add null checks to points display update
+  function updateUserPointsDisplay(userData) {
+    const regPointsEl = document.getElementById('userRegPoints');
+    const starPointsEl = document.getElementById('userStarPoints');
+    
+    if (regPointsEl) {
+      regPointsEl.textContent = userData.points || 0;
+    }
+    if (starPointsEl) {
+      starPointsEl.textContent = userData.starPoints || 0;
+    }
+  }
+
+  // Update login handler with null checks
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
-  
+
     if (username === 'lem' && password === 'lem1234') {
       loginContainer.style.display = 'none';
       adminContainer.style.display = 'block';
       loadUserList();
       return;
     }
-  
+
     try {
       const userRef = ref(db, 'users/' + username);
       const snapshot = await get(userRef);
@@ -774,27 +930,86 @@
         alert('User not found!');
         return;
       }
-  
+
       const userData = snapshot.val();
       if (userData.password !== password) {
         alert('Invalid password!');
         return;
       }
-  
-      document.getElementById('userDisplayName').textContent = username;
-      document.getElementById('userPoints').textContent = userData.points || 0;
-      loginContainer.style.display = 'none';
-      userDashboard.style.display = 'block';
+
+      const userDisplayEl = document.getElementById('userDisplayName');
+      if (userDisplayEl) {
+        userDisplayEl.textContent = username;
+      }
+      
+      updateUserPointsDisplay(userData);
+      
+      if (loginContainer) loginContainer.style.display = 'none';
+      if (userDashboard) userDashboard.style.display = 'block';
 
       // Store current user
       sessionStorage.setItem('currentUser', username);
-      checkStartTimerButton(); // Add this line to check timer button state
+      
+      // Start fresh timer with random duration
+      timeRemaining = getRandomTime();
+      startTimer();
+    
+      // Add real-time points update listener
+      const userPointsRef = ref(db, `users/${username}`);
+      onValue(userPointsRef, (snapshot) => {
+        const userData = snapshot.val();
+        updateUserPointsDisplay(userData);
+      });
+
+      checkStartTimerButton();
+      createWheelSections();
+      const spinBtn = document.getElementById('spinBtn');
+      if (spinBtn) {
+        spinBtn.addEventListener('click', spinWheel);
+      }
       updateLeaderboard();
-      checkAndUpdateBonus(); // Add this line
-      initializeTimer(); // Add this line
+      checkAndUpdateBonus();
+      initializeTimer();
     } catch (error) {
       console.error(error);
-      alert('Login failed!');
+    }
+  });
+
+  // Add auto-login check on page load
+  window.addEventListener('load', async () => {
+    const savedUsername = sessionStorage.getItem('currentUser');
+    if (savedUsername) {
+      try {
+        const userRef = ref(db, `users/${savedUsername}`);
+        const snapshot = await get(userRef);
+        
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          const userDisplayEl = document.getElementById('userDisplayName');
+          if (userDisplayEl) {
+            userDisplayEl.textContent = savedUsername;
+          }
+          
+          updateUserPointsDisplay(userData);
+          
+          if (loginContainer) loginContainer.style.display = 'none';
+          if (userDashboard) userDashboard.style.display = 'block';
+
+          // Initialize all user dashboard features
+          checkStartTimerButton();
+          createWheelSections();
+          const spinBtn = document.getElementById('spinBtn');
+          if (spinBtn) {
+            spinBtn.addEventListener('click', spinWheel);
+          }
+          updateLeaderboard();
+          checkAndUpdateBonus();
+          initializeTimer();
+        }
+      } catch (error) {
+        console.error('Auto-login failed:', error);
+        sessionStorage.removeItem('currentUser');
+      }
     }
   });
 
@@ -852,7 +1067,7 @@
         lastBonusClaim: today.toISOString()
       });
 
-      document.getElementById('userPoints').textContent = newPoints;
+      updateUserPointsDisplay({ points: newPoints });
       document.getElementById('claimBonusBtn').disabled = true;
       document.getElementById('availableBonus').textContent = '0';
       
@@ -915,8 +1130,8 @@
       
       // Refresh bonus claim button state and reinitialize timer
       checkAndUpdateBonus();
-      timeRemaining = TOTAL_TIME;  // Reset timer to full duration
-      initializeTimer();  // Restart timer
+      timeRemaining = getRandomTime();  // Reset timer to random duration
+      startTimer();  // Restart timer
     } catch (error) {
       console.error('Failed to start timer:', error);
       alert('Failed to start timer');
@@ -926,12 +1141,22 @@
   // Admin functions
   window.resetPoints = async (username) => {
     try {
-      await update(ref(db, 'users/' + username), { points: 0, lastClaim: null });
-      alert('Points reset successfully!');
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+      
+      await update(userRef, { 
+        lastClaim: null,
+        lastSpin: null,
+        lastBonusClaim: null,
+        lastTimerStart: null
+      });
+      
+      alert('Reset successful!');
       loadUserList();
     } catch (error) {
       console.error(error);
-      alert('Failed to reset points!');
+      alert('Failed to reset user!');
     }
   };
   
@@ -948,6 +1173,76 @@
     }
   };
   
+  // Donation functionality
+  document.getElementById('donateBtn').addEventListener('click', async () => {
+    const donorUsername = sessionStorage.getItem('currentUser');
+    const recipientUsername = document.getElementById('donateUsername').value.trim();
+    
+    if (!donorUsername || !recipientUsername) {
+      alert('Please enter a username to donate to');
+      return;
+    }
+
+    if (donorUsername === recipientUsername) {
+      alert('You cannot donate to yourself');
+      return;
+    }
+
+    try {
+      const donorRef = ref(db, `users/${donorUsername}`);
+      const recipientRef = ref(db, `users/${recipientUsername}`);
+      
+      // Get donor data
+      const donorSnapshot = await get(donorRef);
+      if (!donorSnapshot.exists()) {
+        alert('Error accessing your account');
+        return;
+      }
+      
+      // Get recipient data
+      const recipientSnapshot = await get(recipientRef);
+      if (!recipientSnapshot.exists()) {
+        alert('Recipient user not found');
+        return;
+      }
+      
+      const donorData = donorSnapshot.val();
+      const recipientData = recipientSnapshot.val();
+      
+      // Ensure starPoints are numbers with default of 0
+      const donorStarPoints = parseInt(donorData.starPoints || 0);
+      const recipientStarPoints = parseInt(recipientData.starPoints || 0);
+      
+      // Check if donor has enough star points
+      if (donorStarPoints < 50) {
+        alert('You need at least 50 star points to make a donation');
+        return;
+      }
+      
+      // Update both users' star points
+      await update(donorRef, {
+        starPoints: donorStarPoints - 50,
+        lastSpin: null // Reset spin to allow one free spin
+      });
+      
+      await update(recipientRef, {
+        starPoints: recipientStarPoints + 25
+      });
+      
+      alert(`Successfully donated 25 star points to ${recipientUsername}! You can now spin the wheel once.`);
+      document.getElementById('donateUsername').value = '';
+      
+      // Enable spin button immediately after successful donation
+      document.getElementById('spinBtn').disabled = false;
+      
+      // Update leaderboard
+      updateLeaderboard();
+    } catch (error) {
+      console.error('Donation failed:', error);
+      alert('Failed to process donation');
+    }
+  });
+
   // Logout functions
   document.getElementById('adminLogout')?.addEventListener('click', () => {
     if (notificationsListener) {
@@ -965,7 +1260,6 @@
       leaderboardListener();
       leaderboardListener = null; // Clear the reference
     }
-    await saveTimerState();
     userDashboard.style.display = 'none';
     loginContainer.style.display = 'block';
     loginForm.reset();
@@ -975,37 +1269,17 @@
   
   // Timer functions
   let timerInterval;
-  const TOTAL_TIME = 3600; // 1 hour in seconds
-  let timeRemaining = TOTAL_TIME;
+  let timeRemaining;
 
-  async function initializeTimer() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : new Date(0);
-      const now = new Date();
-      
-      // Check if already claimed today
-      if (lastClaim.toDateString() === now.toDateString()) {
-        displayTimer(0);
-        return;
-      }
-
-      // Load saved timer state
-      if (userData.timerState) {
-        const elapsed = Math.floor((now - new Date(userData.timerState.lastUpdated)) / 1000);
-        timeRemaining = Math.max(0, userData.timerState.timeRemaining - elapsed);
-      }
-
-      startTimer();
-    } catch (error) {
-      console.error('Timer initialization failed:', error);
-    }
+  function displayTimer(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    document.getElementById('timerMinutes').textContent = String(minutes).padStart(2, '0');
+    document.getElementById('timerSeconds').textContent = String(remainingSeconds).padStart(2, '0');
+    
+    const progress = (seconds / timeRemaining) * 100;
+    document.getElementById('timerProgressBar').style.width = `${progress}%`;
   }
 
   function startTimer() {
@@ -1015,47 +1289,12 @@
     timerInterval = setInterval(async () => {
       timeRemaining--;
       displayTimer(timeRemaining);
-      
-      // Save timer state periodically
-      if (timeRemaining % 10 === 0) {
-        await saveTimerState();
-      }
 
       if (timeRemaining <= 0) {
         clearInterval(timerInterval);
         await awardPoint();
       }
     }, 1000);
-  }
-
-  function displayTimer(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    
-    document.getElementById('timerMinutes').textContent = String(minutes).padStart(2, '0');
-    document.getElementById('timerSeconds').textContent = String(remainingSeconds).padStart(2, '0');
-    
-    const progress = (seconds / TOTAL_TIME) * 100;
-    document.getElementById('timerProgressBar').style.width = `${progress}%`;
-  }
-
-  async function saveTimerState() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      // Check if timeRemaining is defined
-      if (typeof timeRemaining === 'undefined') return;
-
-      await update(ref(db, `users/${username}`), {
-        timerState: {
-          timeRemaining,
-          lastUpdated: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Failed to save timer state:', error);
-    }
   }
 
   async function awardPoint() {
@@ -1070,11 +1309,10 @@
       const newPoints = (userData.points || 0) + 1;
       await update(userRef, {
         points: newPoints,
-        lastClaim: new Date().toISOString(),
-        timerState: null
+        lastClaim: new Date().toISOString()
       });
 
-      document.getElementById('userPoints').textContent = newPoints;
+      updateUserPointsDisplay({ points: newPoints });
       await createNotification(username, newPoints);
       updateLeaderboard();
     } catch (error) {
@@ -1082,9 +1320,97 @@
     }
   }
 
+  // Roulette functionality
+  let wheelSpinning = false;
+  const WHEEL_SECTIONS = 20; // Changed from 10 to 20
+
+  // Create wheel sections with rewards
+  function createWheelSections() {
+    const wheel = document.querySelector('.roulette-wheel');
+    for (let i = 0; i < WHEEL_SECTIONS; i++) {
+      const section = document.createElement('div');
+      section.className = 'wheel-section';
+      section.style.transform = `rotate(${i * (360 / WHEEL_SECTIONS)}deg)`;
+      section.style.backgroundColor = i === 0 ? '#ffd700' : `hsl(${i * (360/WHEEL_SECTIONS)}, 70%, 50%)`;
+      section.textContent = i === 0 ? 'JACKPOT' : `${Math.floor(Math.random() * 21 + 10)}`; // Changed to 10-30 range
+      wheel.appendChild(section);
+    }
+  }
+
+  // Spin wheel functionality
+  async function spinWheel() {
+    if (wheelSpinning) return;
+    
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      // More explicit handling of lastSpin for new users
+      const lastSpin = userData.lastSpin ? new Date(userData.lastSpin) : null;
+      const today = new Date();
+      
+      // Allow spin if lastSpin is null (new user) or from a different day
+      if (lastSpin && lastSpin.toDateString() === today.toDateString()) {
+        alert('You can only spin once per day!');
+        return;
+      }
+
+      wheelSpinning = true;
+      document.getElementById('spinBtn').disabled = true;
+
+      // 25% chance of winning jackpot
+      const willWin = Math.random() < 0.25;
+      const rotations = 5; // Number of full rotations
+      const section = willWin ? 0 : Math.floor(Math.random() * 19) + 1;
+      const degree = rotations * 360 + (section * (360 / WHEEL_SECTIONS));
+      
+      const wheel = document.querySelector('.roulette-wheel');
+      wheel.style.transform = `rotate(${degree}deg)`;
+
+      setTimeout(async () => {
+        wheelSpinning = false;
+        
+        // Ensure points and starPoints are numbers
+        const points = parseInt(userData.points || 0);
+        const starPoints = parseInt(userData.starPoints || 0);
+        
+        if (willWin) {
+          await update(userRef, {
+            points: points + 1,
+            lastSpin: today.toISOString()
+          });
+          alert('Congratulations! You won a regular point!');
+        } else {
+          // Parse the reward as integer and ensure it's a valid number
+          const reward = parseInt(wheel.children[section].textContent);
+          if (isNaN(reward)) {
+            console.error('Invalid reward value');
+            return;
+          }
+          
+          await update(userRef, {
+            starPoints: starPoints + reward,
+            lastSpin: today.toISOString()
+          });
+          alert(`You won ${reward} star points!`);
+        }
+        
+        updateLeaderboard();
+      }, 4000);
+
+    } catch (error) {
+      console.error('Failed to spin wheel:', error);
+      alert('Failed to spin wheel');
+    }
+  }
+
   // Add window beforeunload handler
   window.addEventListener('beforeunload', async () => {
-    await saveTimerState();
+    // Remove timer state saving functionality
   });
   </script>
   </body>
