@@ -8,7 +8,7 @@
     --error: #ff4d4d;
     --success: #4dff4d;
   }
-
+  
   * {
     margin: 0;
     padding: 0;
@@ -345,24 +345,29 @@
     cursor: not-allowed;
   }
 
-  /* Add to existing CSS */
+  /* Update these styles in the existing CSS section */
   .roulette-container {
     margin: 2rem 0;
     text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .roulette-wheel {
-    width: 300px;
-    height: 300px;
+    width: 250px; /* Reduced from 300px to fit better */
+    height: 250px; /* Reduced from 300px to fit better */
     border-radius: 50%;
     border: 10px solid var(--accent);
     margin: 0 auto;
     position: relative;
     transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
     background: var(--bg-secondary);
+    overflow: hidden; /* Add this to prevent sections from overflowing */
   }
 
-  .wheel-section {
+  .roulette-wheel .wheel-section {
     position: absolute;
     width: 50%;
     height: 50%;
@@ -585,16 +590,16 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getDatabase, ref, set, get, child, remove, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
   
-  const firebaseConfig = {
-    apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
-    authDomain: "jns-reward-points.firebaseapp.com",
-    databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "jns-reward-points",
-    storageBucket: "jns-reward-points.appspot.com",
-    messagingSenderId: "856311133669",
-    appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
-    measurementId: "G-KD8HC3H0J1"
-  };
+ const firebaseConfig = {
+  apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
+  authDomain: "jns-reward-points.firebaseapp.com",
+  databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "jns-reward-points",
+  storageBucket: "jns-reward-points.appspot.com",
+  messagingSenderId: "856311133669",
+  appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
+  measurementId: "G-KD8HC3H0J1"
+};
   
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
@@ -1141,22 +1146,23 @@
   // Admin functions
   window.resetPoints = async (username) => {
     try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-      
-      await update(userRef, { 
-        lastClaim: null,
-        lastSpin: null,
-        lastBonusClaim: null,
-        lastTimerStart: null
-      });
-      
-      alert('Reset successful!');
-      loadUserList();
+        const userRef = ref(db, `users/${username}`);
+        
+        await update(userRef, { 
+            points: 0, // Reset regular points to 0
+            starPoints: 0, // Reset star points to 0
+            lastClaim: null,
+            lastSpin: null,
+            lastBonusClaim: null,
+            lastTimerStart: null,
+            availableBonus: 0 // Reset available bonus to 0
+        });
+        
+        alert('Reset successful! All points have been set to zero.');
+        loadUserList(); // Refresh the user list display
     } catch (error) {
-      console.error(error);
-      alert('Failed to reset user!');
+        console.error('Reset failed:', error);
+        alert('Failed to reset user!');
     }
   };
   
@@ -1269,8 +1275,9 @@
   
   // Timer functions
   let timerInterval;
-  let timeRemaining;
-
+  let timeRemaining;  
+  let timerStartTime; // Add this to track when timer started
+ 
   function displayTimer(seconds) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -1284,13 +1291,20 @@
 
   function startTimer() {
     clearInterval(timerInterval);
+    timerStartTime = Date.now(); // Record start time
     displayTimer(timeRemaining);
     
+    // Save initial timer state with actual timestamp
+    saveTimerState();
+    
     timerInterval = setInterval(async () => {
-      timeRemaining--;
-      displayTimer(timeRemaining);
+      const elapsedSeconds = Math.floor((Date.now() - timerStartTime) / 1000);
+      const remaining = Math.max(0, Math.floor(timeRemaining - elapsedSeconds));
+      
+      displayTimer(remaining);
+      saveTimerState();
 
-      if (timeRemaining <= 0) {
+      if (remaining <= 0) {
         clearInterval(timerInterval);
         await awardPoint();
       }
@@ -1317,6 +1331,60 @@
       updateLeaderboard();
     } catch (error) {
       console.error('Failed to award point:', error);
+    }
+  }
+
+  // Timer persistence functionality
+  async function initializeTimer() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      if (userData.timerState) {
+        const savedState = userData.timerState;
+        const now = Date.now();
+        const elapsedTime = Math.floor((now - savedState.startTime) / 1000);
+        timeRemaining = Math.max(0, savedState.duration);
+        const actualRemaining = Math.max(0, timeRemaining - elapsedTime);
+        
+        if (actualRemaining > 0) {
+          timeRemaining = actualRemaining;
+          timerStartTime = now - (elapsedTime * 1000);
+          startTimer();
+        } else {
+          // Timer expired while away
+          await awardPoint();
+          timeRemaining = getRandomTime();
+          startTimer();
+        }
+      } else {
+        timeRemaining = getRandomTime();
+        startTimer();
+      }
+    } catch (error) {
+      console.error('Failed to initialize timer:', error);
+    }
+  }
+
+  // Update saveTimerState function
+  async function saveTimerState() {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}`);
+      await update(userRef, {
+        timerState: {
+          startTime: timerStartTime,
+          duration: timeRemaining
+        }
+      });
+    } catch (error) {
+      console.error('Failed to save timer state:', error);
     }
   }
 
