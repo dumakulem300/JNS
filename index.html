@@ -235,6 +235,23 @@
     text-align: center;
   }
 
+  .save-time-btn {
+    background: #4CAF50;
+    color: white;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    width: 100%;
+    transition: background 0.2s;
+  }
+
+  .save-time-btn:hover {
+    background: #45a049;
+  }
+
   .timer-display {
     font-size: 2.5rem;
     font-weight: bold;
@@ -547,6 +564,7 @@
         <div class="timer-progress">
           <div id="timerProgressBar"></div>
         </div>
+        <button class="save-time-btn" onclick="location.reload()">Save Time</button>
       </div>
       
       <div class="roulette-container">
@@ -590,7 +608,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getDatabase, ref, set, get, child, remove, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
   
- const firebaseConfig = {
+  const firebaseConfig = {
   apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
   authDomain: "jns-reward-points.firebaseapp.com",
   databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -630,11 +648,6 @@
     registerContainer.style.display = 'none';
   });
   
-  // Add this function for random time generation
-  function getRandomTime() {
-    return Math.floor(Math.random() * (60 - 42 + 1) + 42) * 60;
-  }
-
   // Register new user
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -955,11 +968,11 @@
       // Store current user
       sessionStorage.setItem('currentUser', username);
       
-      // Start fresh timer with random duration
-      timeRemaining = getRandomTime();
-      startTimer();
-    
-      // Add real-time points update listener
+  // Start timer
+  startTimer();
+
+  // Add real-time points update listener
+
       const userPointsRef = ref(db, `users/${username}`);
       onValue(userPointsRef, (snapshot) => {
         const userData = snapshot.val();
@@ -1123,20 +1136,26 @@
         return;
       }
 
-      // Update lastTimerStart and remove both lastBonusClaim and lastClaim
+      // Reset duration to 60 minutes (3600 seconds)
       await update(userRef, {
         lastTimerStart: today.toISOString(),
         lastBonusClaim: null,
-        lastClaim: null  // Added this line to delete lastClaim
+        lastClaim: null,
+        timerState: {
+          startTime: Date.now(),
+          duration: 3600
+        }
       });
 
       document.getElementById('startTimerBtn').disabled = true;
-      alert('Timer reset successful! You can now start a new timer session.');
+      alert('Timer reset successful! Starting new 60 minute session.');
       
-      // Refresh bonus claim button state and reinitialize timer
+      // Set initial timer values
+      timeRemaining = 3600;
+      timerStartTime = Date.now();
+      
       checkAndUpdateBonus();
-      timeRemaining = getRandomTime();  // Reset timer to random duration
-      startTimer();  // Restart timer
+      startTimer(); // Start the timer with new duration
     } catch (error) {
       console.error('Failed to start timer:', error);
       alert('Failed to start timer');
@@ -1301,6 +1320,9 @@
       const elapsedSeconds = Math.floor((Date.now() - timerStartTime) / 1000);
       const remaining = Math.max(0, Math.floor(timeRemaining - elapsedSeconds));
       
+      // Update the duration in real-time
+      updateDuration(remaining);
+      
       displayTimer(remaining);
       saveTimerState();
 
@@ -1309,6 +1331,21 @@
         await awardPoint();
       }
     }, 1000);
+  }
+
+  // Add new function to update duration
+  async function updateDuration(remaining) {
+    const username = sessionStorage.getItem('currentUser');
+    if (!username) return;
+
+    try {
+      const userRef = ref(db, `users/${username}/timerState`);
+      await update(userRef, {
+        duration: remaining
+      });
+    } catch (error) {
+      console.error('Failed to update duration:', error);
+    }
   }
 
   async function awardPoint() {
@@ -1320,15 +1357,28 @@
       const snapshot = await get(userRef);
       const userData = snapshot.val();
 
+      // Check if user already claimed today
+      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : null;
+      const today = new Date();
+      
+      if (lastClaim && lastClaim.toDateString() === today.toDateString()) {
+          alert('You have already claimed your point today! Come back tomorrow.');
+          clearInterval(timerInterval);
+          return;
+      }
+
       const newPoints = (userData.points || 0) + 1;
       await update(userRef, {
         points: newPoints,
-        lastClaim: new Date().toISOString()
+        lastClaim: today.toISOString()
       });
 
       updateUserPointsDisplay({ points: newPoints });
       await createNotification(username, newPoints);
       updateLeaderboard();
+      
+      alert('Congratulations! You have claimed your daily point.');
+      
     } catch (error) {
       console.error('Failed to award point:', error);
     }
@@ -1348,7 +1398,9 @@
         const savedState = userData.timerState;
         const now = Date.now();
         const elapsedTime = Math.floor((now - savedState.startTime) / 1000);
-        timeRemaining = Math.max(0, savedState.duration);
+        
+        // Use saved duration
+        timeRemaining = savedState.duration;
         const actualRemaining = Math.max(0, timeRemaining - elapsedTime);
         
         if (actualRemaining > 0) {
@@ -1356,17 +1408,39 @@
           timerStartTime = now - (elapsedTime * 1000);
           startTimer();
         } else {
-          // Timer expired while away
           await awardPoint();
-          timeRemaining = getRandomTime();
-          startTimer();
+          await startUserTimer(username);
         }
       } else {
-        timeRemaining = getRandomTime();
-        startTimer();
+        await startUserTimer(username);
       }
     } catch (error) {
       console.error('Failed to initialize timer:', error);
+    }
+  }
+
+  // Add the new startUserTimer function
+  async function startUserTimer(username) {
+    try {
+      const userRef = ref(db, `users/${username}`);
+      const snapshot = await get(userRef);
+      const userData = snapshot.val();
+
+      // Check if user already claimed today
+      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : null;
+      const today = new Date();
+      
+      if (lastClaim && lastClaim.toDateString() === today.toDateString()) {
+          alert('You have already claimed your point today! Come back tomorrow.');
+          return;
+      }
+
+      // Always start with 60 minutes
+      timeRemaining = 3600;
+      timerStartTime = Date.now();
+      startTimer();
+    } catch (error) {
+      console.error("Error starting timer for user:", username, error);
     }
   }
 
@@ -1376,12 +1450,10 @@
     if (!username) return;
 
     try {
-      const userRef = ref(db, `users/${username}`);
+      const userRef = ref(db, `users/${username}/timerState`);
       await update(userRef, {
-        timerState: {
-          startTime: timerStartTime,
-          duration: timeRemaining
-        }
+        startTime: timerStartTime,
+        duration: timeRemaining // Use current timeRemaining value
       });
     } catch (error) {
       console.error('Failed to save timer state:', error);
