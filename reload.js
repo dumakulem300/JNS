@@ -17,5 +17,3 @@ document.getElementById('loginUsername').addEventListener('click', () => {
     }, 15000); // 10-second delay
   }
 });
-
-<script src="reload.js"></script>
