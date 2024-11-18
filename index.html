@@ -1,1562 +1,1157 @@
-<html><head><base href="." /><title>JNS Rewards System - Login</title>
-  <style>
-  :root {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #252525;
-    --text-primary: #ffffff;
-    --accent: #7c4dff;
-    --error: #ff4d4d;
-    --success: #4dff4d;
-  }
+<html><head><base href="/" />
+  <title>JNS Internet Shop Reward System - Login</title>
+  <meta charset="UTF-12">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
   
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-  }
-  
-  body {
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-image: url('Congratz top 10.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-  }
-  
-  .container {
-    width: 100%;
-    max-width: 400px;
-    padding: 2rem;
-  }
-  
-  .auth-form {
-    background: rgba(37, 37, 37, 0.95);
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    backdrop-filter: blur(5px);
-  }
-  
-  h1 {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: var(--accent);
-  }
-  
-  .input-group {
-    margin-bottom: 1.5rem;
-  }
-  
-  .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-  
-  .input-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #444;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-radius: 5px;
-    outline: none;
-  }
-  
-  .input-group input:focus {
-    border-color: var(--accent);
-  }
-  
-  button {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: opacity 0.2s;
-  }
-  
-  button:hover {
-    opacity: 0.9;
-  }
-  
-  .switch-form {
-    text-align: center;
-    margin-top: 1rem;
-  }
-  
-  .switch-form a {
-    color: var(--accent);
-    text-decoration: none;
-  }
-  
-  /* Admin styles */
-  .admin-panel {
-    display: none;
-    max-width: 800px;
-    background: rgba(37, 37, 37, 0.95);
-    backdrop-filter: blur(5px);
-    padding: 2rem;
-    border-radius: 10px;
-  }
-  
-  .user-list {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 2rem;
-  }
-  
-  .user-list th, .user-list td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid #444;
-  }
-  
-  .action-btn {
-    padding: 0.5rem 1rem;
-    margin: 0.25rem;
-    border-radius: 3px;
-  }
-  
-  .delete-btn {
-    background: var(--error);
-  }
-  
-  .reset-btn {
-    background: var(--accent);
-  }
-  
-  .points {
-    color: var(--accent);
-    font-weight: bold;
-  }
-  
-  .notifications {
-    margin-bottom: 2rem;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  .notification {
-    background: rgba(26, 26, 26, 0.95);
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    border-radius: 5px;
-    border-left: 3px solid var(--accent);
-  }
-
-  .notification-time {
-    color: #888;
-    font-size: 0.8rem;
-  }
-
-  /* Add this to the existing CSS */
-  .warning-message {
-    background: rgba(37, 37, 37, 0.95);
-    border-left: 4px solid var(--error);
-    padding: 1rem;
-    margin-top: 1rem;
-    border-radius: 5px;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    backdrop-filter: blur(5px);
-  }
-
-  .warning-message strong {
-    color: var(--error);
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  /* Add this to the existing CSS */
-  .leaderboard {
-    background: rgba(37, 37, 37, 0.95);
-    padding: 1.5rem;
-    border-radius: 10px;
-    margin-top: 1rem;
-    backdrop-filter: blur(5px);
-  }
-
-  .leaderboard h2 {
-    color: var(--accent);
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .leaderboard-list {
-    list-style: none;
-  }
-
-  .leaderboard-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    border-bottom: 1px solid #444;
-    transition: background-color 0.2s;
-  }
-
-  .leaderboard-item:hover {
-    background: rgba(124, 77, 255, 0.1);
-  }
-
-  .leaderboard-rank {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--accent);
-    width: 40px;
-  }
-
-  .leaderboard-username {
-    flex-grow: 1;
-    margin-left: 1rem;
-  }
-
-  .leaderboard-points {
-    font-weight: bold;
-    color: var(--accent);
-  }
-
-  .leaderboard-item.current-user {
-    background: rgba(124, 77, 255, 0.2);
-    border-left: 3px solid var(--accent);
-  }
-
-  .timer-container {
-    margin: 1rem 0;
-    text-align: center;
-  }
-
-  .save-time-btn {
-    background: #4CAF50;
-    color: white;
-    padding: 0.5rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    width: 100%;
-    transition: background 0.2s;
-  }
-
-  .save-time-btn:hover {
-    background: #45a049;
-  }
-
-  .timer-display {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: var(--accent);
-    text-shadow: 0 0 10px rgba(124, 77, 255, 0.3);
-    margin-bottom: 0.5rem;
-  }
-
-  .timer-progress {
-    width: 100%;
-    height: 6px;
-    background: rgba(124, 77, 255, 0.2);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  #timerProgressBar {
-    height: 100%;
-    background: var(--accent);
-    width: 100%;
-    transition: width 1s linear;
-  }
-  
-  .bonus-controls {
-    background: rgba(37, 37, 37, 0.95);
-    padding: 1rem;
-    border-radius: 5px;
-    margin: 1rem 0;
-  }
-
-  .bonus-controls h3 {
-    color: var(--accent);
-    margin-bottom: 1rem;
-  }
-
-  .bonus-controls .input-group {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-
-  .bonus-controls input {
-    flex: 2;
-    padding: 0.75rem;
-    border: 1px solid #444;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-radius: 5px;
-    outline: none;
-  }
-
-  .bonus-controls .action-btn {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .bonus-controls select {
-    padding: 0.75rem;
-    border: 1px solid #444;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    border-radius: 5px;
-    outline: none;
-  }
-
-  .bonus-controls select:focus {
-    border-color: var(--accent);
-  }
-
-  .bonus-section {
-    background: rgba(37, 37, 37, 0.95);
-    padding: 1rem;
-    border-radius: 5px;
-    text-align: center;
-  }
-
-  .bonus-amount {
-    font-size: 1.2rem;
-    color: var(--accent);
-    font-weight: bold;
-  }
-
-  #claimBonusBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Add this to the existing CSS */
-  .start-timer-btn {
-    background: #ff7043; 
-    color: white;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s;
-    width: 100%;
-    margin-top: 1rem;
-  }
-
-  .start-timer-btn:hover {
-    background: #f4511e;
-  }
-
-  .start-timer-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Update these styles in the existing CSS section */
-  .roulette-container {
-    margin: 2rem 0;
-    text-align: center;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .roulette-wheel {
-    width: 250px; /* Reduced from 300px to fit better */
-    height: 250px; /* Reduced from 300px to fit better */
-    border-radius: 50%;
-    border: 10px solid var(--accent);
-    margin: 0 auto;
-    position: relative;
-    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-    background: var(--bg-secondary);
-    overflow: hidden; /* Add this to prevent sections from overflowing */
-  }
-
-  .roulette-wheel .wheel-section {
-    position: absolute;
-    width: 50%;
-    height: 50%;
-    clip-path: polygon(100% 50%, 50% 50%, 50% 0%);
-    transform-origin: bottom right;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding-top: 20px;
-    color: white;
-    font-weight: bold;
-    font-size: 1.2rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-  }
-
-  .wheel-pointer {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-top: 20px solid var(--accent);
-  }
-
-  .spin-btn {
-    background: var(--accent);
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 1rem;
-    transition: all 0.2s;
-  }
-
-  .spin-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .points-display {
-    display: flex;
-    justify-content: space-around;
-    margin: 1rem 0;
-  }
-
-  .points-item {
-    text-align: center;
-  }
-
-  .points-value {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--accent);
-  }
-
-  .donation-container {
-    margin-top: 2rem;
-    background: rgba(37, 37, 37, 0.95);
-    padding: 1.5rem;
-    border-radius: 10px;
-  }
-
-  .donation-container h3 {
-    color: var(--accent);
-    margin-bottom: 1rem;
-    text-align: center;
-  }
-
-  .donation-info {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #888;
-    text-align: center;
-  }
-  </style>
-  </head>
+</head>
   <body>
-  <div class="container" id="loginContainer">
-    <form class="auth-form" id="loginForm">
-      <h1>JNS Internet Shop</h1>
-      <h2>Claim your points!!!</h2>
-      <div class="input-group">
-        <label for="loginUsername">Username</label>
-        <input type="text" id="loginUsername" required>
-      </div>
-      <div class="input-group">
-        <label for="loginPassword">Password</label>
-        <input type="password" id="loginPassword" required>
-      </div>
-      <button type="submit">Login</button>
-      <div class="switch-form">
-        <a href="#" id="showRegister">Need an account? Register</a>
-      </div>
-    </form>
-  </div>
-  
-  <div class="container" id="registerContainer" style="display: none;">
-    <form class="auth-form" id="registerForm">
-      <h1>Register</h1>
-      <div class="input-group">
-        <label for="regUsername">Username</label>
-        <input type="text" id="regUsername" required>
-      </div>
-      <div class="input-group">
-        <label for="regPassword">Password</label>
-        <input type="password" id="regPassword" required>
-      </div>
-      <button type="submit">Register</button>
-      <div class="switch-form">
-        <a href="#" id="showLogin">Already have an account? Login</a>
-      </div>
-    </form>
-  </div>
-  
-  <div class="container admin-panel" id="adminContainer">
-    <h1>Admin Panel</h1>
-    <div class="notifications" id="adminNotifications">
-      <h2>Recent Claims</h2>
-      <!-- Notifications will be inserted here -->
-    </div>
-    <button id="adminLogout" style="margin-bottom: 1rem;">Logout</button>
-    <div class="bonus-controls">
-      <h3>Give Bonus Points</h3>
-      <div class="input-group">
-        <input type="number" id="bonusPoints" min="1" placeholder="Enter bonus points">
-        <button id="giveBonusBtn" class="action-btn reset-btn">Give Bonus</button>
-      </div>
-      <div class="input-group" style="margin-top: 1rem;">
-        <select id="userSelect" style="flex: 2;">
-          <option value="">Select User</option>
-        </select>
-        <button id="addBonusToUserBtn" class="action-btn reset-btn">Add Bonus</button>
-      </div>
-    </div>
-    <table class="user-list">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Points</th>
-          <th>Last Claim</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="userList"></tbody>
-    </table>
-  </div>
-  
-  <div class="container" id="userDashboard" style="display: none;">
-    <div class="auth-form">
-      <button id="startTimerBtn" class="start-timer-btn">Start Timer</button>
-      <div class="bonus-section" style="margin-bottom: 1rem;">
-        <div class="bonus-amount">Available Bonus: <span id="availableBonus">0</span></div>
-        <button id="claimBonusBtn" class="action-btn reset-btn" style="margin-top: 0.5rem;">Claim Bonus</button>
-      </div>
-      <h1>Welcome <span id="userDisplayName"></span></h1>
+          <div class="box">
+              <div class="form">
+                  <div class="logo">
+                      <svg viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                          <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                      </svg>
+                  </div>
+                  <h2>JNS Internet Shop Reward Portal</h2>
+                  <form id="loginForm">
+                      <div class="inputbox">
+                          <input type="text" id="username" required>
+                          <span>Username</span>
+                      </div>
+                      <div class="inputbox">
+                          <input type="password" id="password" required>
+                          <span>Password</span>           
+                      </div>
+                      <button type="submit" class="sub">Login</button>
+                      <div class="login-link">
+                          Need an account? <a href="#" id="registerLink">Register</a>
+                      </div>
+                  </form>
+              </div>
+          </div>
       
-      <div class="points-display">
-        <div class="points-item">
-          <div>Regular Points</div>
-          <div id="userRegPoints" class="points-value">0</div>
-        </div>
-        <div class="points-item">
-          <div>Star Points</div>
-          <div id="userStarPoints" class="points-value">0</div>
-        </div>
-      </div>
+          <script type="module">
+              import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+              import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
       
-      <div class="timer-container">
-        <div class="timer-display">
-          <span id="timerMinutes">60</span>:<span id="timerSeconds">00</span>
-        </div>
-        <div class="timer-progress">
-          <div id="timerProgressBar"></div>
-        </div>
-        <button class="save-time-btn" onclick="location.reload()">Save Time</button>
-      </div>
+             // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+            const firebaseConfig = {
+            apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
+            authDomain: "jns-reward-points.firebaseapp.com",
+            databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "jns-reward-points",
+            storageBucket: "jns-reward-points.firebasestorage.app",
+            messagingSenderId: "856311133669",
+            appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
+            measurementId: "G-KD8HC3H0J1"
+            };
       
-      <div class="roulette-container">
-        <div class="roulette-wheel">
-          <div class="wheel-pointer"></div>
-          <!-- Wheel sections will be added dynamically -->
-        </div>
-        <button id="spinBtn">Spin the Wheel</button>
-      </div>
+              let regularPoints = 0;
+              let starPoints = 0;
       
-      <div class="donation-container">
-        <h3>Donate Star Points</h3>
-        <div class="input-group">
-          <input type="text" id="donateUsername" placeholder="Enter username to donate to">
-          <button id="donateBtn" class="action-btn reset-btn">Donate 25 Points (Cost: 50)</button>
-        </div>
-        <div class="donation-info">
-          Each donation costs 50 star points (25 points donated + 25 points fee)
-          and gives you 1 free spin!
-        </div>
-      </div>
+              const app = initializeApp(firebaseConfig);
+              const db = getDatabase(app);
       
-      <button id="userLogout" style="margin-top: 1rem;">Logout</button>
-    </div>
-    <div class="warning-message">
-      <strong>⚠️ WARNING:</strong>
-      Pede ma ban ang mahuhuling mandaya sa pagkuha ng points.<br>
-      Mag login lang kapag naglaro!,
-      Bawal mag register ng dalawa o maraming account,
-      Sa internet shop lang pede iopen ang reward app
-    </div>
-    <div class="leaderboard">
-      <h2>🏆 Top 10 Players</h2>
-      <ul class="leaderboard-list" id="leaderboardList">
-        <!-- Leaderboard items will be inserted here -->
-      </ul>
-    </div>
-  </div>
-  
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-  import { getDatabase, ref, set, get, child, remove, update, push, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-  
-  const firebaseConfig = {
-  apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
-  authDomain: "jns-reward-points.firebaseapp.com",
-  databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "jns-reward-points",
-  storageBucket: "jns-reward-points.appspot.com",
-  messagingSenderId: "856311133669",
-  appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
-  measurementId: "G-KD8HC3H0J1"
-};
-  
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  let leaderboardListener = null; // Add this line to track the listener
-  let notificationsListener = null; // Add this line to track notifications listener
-  
-  // UI Elements
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const showRegisterLink = document.getElementById('showRegister');
-  const showLoginLink = document.getElementById('showLogin');
-  const adminContainer = document.getElementById('adminContainer');
-  const userDashboard = document.getElementById('userDashboard');
-  const loginContainer = document.getElementById('loginContainer');
-  const registerContainer = document.getElementById('registerContainer');
-  
-  // Switch between login and register forms
-  showRegisterLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    loginContainer.style.display = 'none';
-    registerContainer.style.display = 'block';
-  });
-  
-  showLoginLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    loginContainer.style.display = 'block';
-    registerContainer.style.display = 'none';
-  });
-  
-  // Register new user
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('regUsername').value;
-    const password = document.getElementById('regPassword').value;
-  
-    try {
-      const userRef = ref(db, 'users/' + username);
-      const snapshot = await get(userRef);
+              function showLoginForm() {
+                  const form = document.querySelector('.form');
+                  form.innerHTML = `
+                      <div class="logo">
+                          <svg viewBox="0 0 100 100">
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                              <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                          </svg>
+                      </div>
+                      <h2>JNS Internet Shop Reward Portal</h2>
+                      <form id="loginForm">
+                          <div class="inputbox">
+                              <input type="text" id="username" required>
+                              <span>Username</span>
+                          </div>
+                          <div class="inputbox">
+                              <input type="password" id="password" required>
+                              <span>Password</span>           
+                          </div>
+                          <button type="submit" class="sub">Login</button>
+                          <div class="login-link">
+                              Need an account? <a href="#" id="registerLink">Register</a>
+                          </div>
+                      </form>
+                  `;
       
-      if (snapshot.exists()) {
-        alert('Username already exists!');
-        return;
-      }
-  
-      // Initialize user with lastSpin as null to allow first spin
-      await set(userRef, {
-        username,
-        password,
-        points: 0,
-        starPoints: 0,
-        availableBonus: 0,
-        lastClaim: null,
-        lastBonusClaim: null,
-        lastSpin: null,  // Explicitly set lastSpin as null
-        timerState: null
-      });
-  
-      alert('Registration successful!');
-      registerForm.reset();
-      loginContainer.style.display = 'block';
-      registerContainer.style.display = 'none';
-    } catch (error) {
-      console.error(error);
-      alert('Registration failed!');
-    }
-  });
-  
-  // Create notification
-  async function createNotification(username, points) {
-    try {
-      const notificationsRef = ref(db, 'notifications');
-      const newNotificationRef = push(notificationsRef);
-      await set(newNotificationRef, {
-        username,
-        points,
-        timestamp: new Date().toISOString(),
-        read: false
-      });
-    } catch (error) {
-      console.error('Failed to create notification:', error);
-    }
-  }
-
-  // Load notifications
-  async function loadNotifications() {
-    try {
-      const notificationsRef = ref(db, 'notifications');
-      const notificationsDiv = document.getElementById('adminNotifications');
+                  // Re-add event listeners for the new form
+                  const loginForm = document.getElementById("loginForm");
+                  const registerLink = document.getElementById("registerLink");
+                  
+                  if (loginForm) {
+                      loginForm.addEventListener('submit', handleLogin);
+                  }
+                  
+                  if (registerLink) {
+                      registerLink.addEventListener('click', showRegisterForm);
+                  }
+              }
       
-      if (!notificationsDiv) return;
+              function showRegisterForm() {
+                  const form = document.querySelector('.form');
+                  form.innerHTML = `
+                      <div class="logo">
+                          <svg viewBox="0 0 100 100">
+                              <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                              <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                          </svg>
+                      </div>
+                      <h2>Register New Account</h2>
+                      <form id="registerForm">
+                          <div class="inputbox">
+                              <input type="text" id="newUsername" required>
+                              <span>Username</span>
+                          </div>
+                          <div class="inputbox">
+                              <input type="password" id="newPassword" required>
+                              <span>Password</span>           
+                          </div>
+                          <button type="submit" class="sub">Register</button>
+                          <div class="login-link">
+                              Already have an account? <a href="#" id="loginLink">Login</a>
+                          </div>
+                      </form>
+                  `;
       
-      // Remove existing listener if it exists
-      if (notificationsListener) {
-        notificationsListener();
-      }
+                  // Add event listeners for the register form
+                  const registerForm = document.getElementById("registerForm");
+                  const loginLink = document.getElementById("loginLink");
+                  
+                  if (registerForm) {
+                      registerForm.addEventListener('submit', handleRegister);
+                  }
+                  
+                  if (loginLink) {
+                      loginLink.addEventListener('click', showLoginForm);
+                  }
+              }
       
-      // Store the new listener
-      notificationsListener = onValue(notificationsRef, (snapshot) => {
-        if (!notificationsDiv) return;
-        
-        notificationsDiv.innerHTML = '<h2>Recent Claims</h2>';
-        
-        if (snapshot.exists()) {
-          const notifications = [];
-          snapshot.forEach((child) => {
-            notifications.push({ id: child.key, ...child.val() });
-          });
-          
-          notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          
-          notifications.forEach((notification) => {
-            const notificationEl = document.createElement('div');
-            notificationEl.className = 'notification';
-            notificationEl.innerHTML = `
-              <div>User <strong>${notification.username}</strong> claimed their daily point</div>
-              <div class="notification-time">${new Date(notification.timestamp).toLocaleString()}</div>
-            `;
-            notificationsDiv.appendChild(notificationEl);
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  }
-
-  // Load user list and notifications
-  const loadUserList = async () => {
-    const userList = document.getElementById('userList');
-    userList.innerHTML = '';
-  
-    try {
-      const usersRef = ref(db, 'users');
-      const snapshot = await get(usersRef);
+              async function checkExistingSession() {
+                  const loginLogsRef = ref(db, 'loginLogs');
+                  const snapshot = await get(loginLogsRef);
+                  
+                  if (snapshot.exists()) {
+                      const loginLogs = snapshot.val();
+                      for (const username in loginLogs) {
+                          const log = loginLogs[username];
+                          if (log.status === 'online') {
+                              // Get user points
+                              const pointsRef = ref(db, 'userPoints/' + username);
+                              const pointsSnapshot = await get(pointsRef);
+                              
+                              if (pointsSnapshot.exists()) {
+                                  const pointsData = pointsSnapshot.val();
+                                  regularPoints = pointsData.regularPoints || 0;
+                                  starPoints = pointsData.starPoints || 0;
+                              } else {
+                                  // Initialize points if they don't exist
+                                  regularPoints = 0;
+                                  starPoints = 0;
+                              }
+                              
+                              // Show main page for logged in user
+                              showMainPage(username);
+                              return;
+                          }
+                      }
+                  }
+              }
       
-      if (snapshot.exists()) {
-        snapshot.forEach((child) => {
-          const user = child.val();
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${user.username}</td>
-            <td>${user.points || 0}</td>
-            <td>${user.lastClaim ? new Date(user.lastClaim).toLocaleDateString() : 'Never'}</td>
-            <td>
-              <button class="action-btn reset-btn" onclick="window.resetPoints('${user.username}')">Reset</button>
-              <button class="action-btn delete-btn" onclick="window.deleteUser('${user.username}')">Delete</button>
-            </td>
-          `;
-          userList.appendChild(row);
-        });
-      }
-      updateUserSelect(); // Add this line to update dropdown when user list loads
-      loadNotifications(); // Load notifications
-    } catch (error) {
-      console.error(error);
-      alert('Failed to load user list!');
-    }
-  }
-
-  // Update user select dropdown
-  function updateUserSelect() {
-    const userSelect = document.getElementById('userSelect');
-    
-    // Clear existing options except the first one
-    while (userSelect.options.length > 1) {
-      userSelect.remove(1);
-    }
-    
-    // Get users and add to dropdown
-    get(ref(db, 'users')).then((snapshot) => {
-      if (snapshot.exists()) {
-        snapshot.forEach((child) => {
-          const user = child.val();
-          const option = document.createElement('option');
-          option.value = user.username;
-          option.textContent = user.username;
-          userSelect.appendChild(option);
-        });
-      }
-    }).catch((error) => {
-      console.error('Failed to load users for dropdown:', error);
-    });
-  }
-
-  // Add bonus to specific user
-  document.getElementById('addBonusToUserBtn').addEventListener('click', async () => {
-    const selectedUser = document.getElementById('userSelect').value;
-    const bonusAmount = parseInt(document.getElementById('bonusPoints').value);
-    
-    if (!selectedUser) {
-      alert('Please select a user');
-      return;
-    }
-    
-    if (!bonusAmount || bonusAmount <= 0) {
-      alert('Please enter a valid bonus amount');
-      return;
-    }
-
-    try {
-      const userBonusRef = ref(db, `users/${selectedUser}/availableBonus`);
-      await set(userBonusRef, bonusAmount);
-      alert(`Bonus of ${bonusAmount} points set for user ${selectedUser}`);
-    } catch (error) {
-      console.error('Failed to set user bonus:', error);
-      alert('Failed to set user bonus');
-    }
-  });
-
-  // Modify the give bonus button click handler
-  document.getElementById('giveBonusBtn').addEventListener('click', async () => {
-    const bonusAmount = parseInt(document.getElementById('bonusPoints').value);
-    
-    if (!bonusAmount || bonusAmount <= 0) {
-      alert('Please enter a valid bonus amount');
-      return;
-    }
-
-    try {
-      const usersRef = ref(db, 'users');
-      const snapshot = await get(usersRef);
+              async function canSpinSlotToday(username) {
+                  // First check for bonus spins
+                  const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                  const bonusSnapshot = await get(bonusSpinRef);
+                  
+                  if (bonusSnapshot.exists() && bonusSnapshot.val().spinsRemaining > 0) {
+                      return true;
+                  }
+                  
+                  // If no bonus spins, check regular daily spin
+                  const spinsRef = ref(db, 'slotSpins/' + username);
+                  const snapshot = await get(spinsRef);
+                  
+                  if (!snapshot.exists()) {
+                      return true;
+                  }
       
-      if (snapshot.exists()) {
-        const updates = {};
-        
-        snapshot.forEach((child) => {
-          updates[`users/${child.key}/availableBonus`] = bonusAmount;
-        });
-        
-        // Update all users simultaneously
-        await update(ref(db), updates);
-        alert(`Bonus of ${bonusAmount} points set for all users`);
-        document.getElementById('bonusPoints').value = ''; // Clear input
-      }
-    } catch (error) {
-      console.error('Failed to distribute bonus:', error);
-      alert('Failed to distribute bonus to users');
-    }
-  });
-
-  // Update leaderboard
-  async function updateLeaderboard() {
-    try {
-      const usersRef = ref(db, 'users');
-      const currentUser = sessionStorage.getItem('currentUser');
-      const leaderboardList = document.getElementById('leaderboardList');
+                  const lastSpin = new Date(snapshot.val().lastSpin);
+                  const now = new Date();
+                  const resetTime = new Date();
+                  resetTime.setHours(1, 0, 0, 0);
       
-      if (!leaderboardList) return; // Early return if element doesn't exist
+                  if (now < resetTime) {
+                      resetTime.setDate(resetTime.getDate() - 1);
+                  }
       
-      // Remove existing listener if it exists
-      if (leaderboardListener) {
-        leaderboardListener();
-      }
+                  return lastSpin < resetTime;
+              }
       
-      // Store the new listener
-      leaderboardListener = onValue(usersRef, (snapshot) => {
-        const leaderboardList = document.getElementById('leaderboardList');
-        if (!leaderboardList) return; // Check again inside callback
-        
-        if (snapshot.exists()) {
-          const users = [];
-          snapshot.forEach((child) => {
-            users.push({
-              username: child.val().username,
-              points: child.val().points || 0,
-              starPoints: child.val().starPoints || 0
-            });
-          });
-          
-          // Sort by regular points first, then star points
-          users.sort((a, b) => {
-            if (b.points !== a.points) return b.points - a.points;
-            return b.starPoints - a.starPoints;
-          });
-          
-          const top10 = users.slice(0, 10);
-          leaderboardList.innerHTML = '';
-          
-          top10.forEach((user, index) => {
-            const li = document.createElement('li');
-            li.className = `leaderboard-item${user.username === currentUser ? ' current-user' : ''}`;
-            li.innerHTML = `
-              <span class="leaderboard-rank">#${index + 1}</span>
-              <span class="leaderboard-username">${user.username}</span>
-              <span class="leaderboard-points">${user.points} pts | ⭐ ${user.starPoints}</span>
-            `;
-            leaderboardList.appendChild(li);
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Failed to update leaderboard:', error);
-    }
-  }
-
-  // Add null checks to points display update
-  function updateUserPointsDisplay(userData) {
-    const regPointsEl = document.getElementById('userRegPoints');
-    const starPointsEl = document.getElementById('userStarPoints');
-    
-    if (regPointsEl) {
-      regPointsEl.textContent = userData.points || 0;
-    }
-    if (starPointsEl) {
-      starPointsEl.textContent = userData.starPoints || 0;
-    }
-  }
-
-  // Update login handler with null checks
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
-
-    if (username === 'lem' && password === 'lem1234') {
-      loginContainer.style.display = 'none';
-      adminContainer.style.display = 'block';
-      loadUserList();
-      return;
-    }
-
-    try {
-      const userRef = ref(db, 'users/' + username);
-      const snapshot = await get(userRef);
+              async function canSpinRouletteToday(username) {
+                  const spinsRef = ref(db, 'rouletteSpins/' + username);
+                  const snapshot = await get(spinsRef);
+                  
+                  if (!snapshot.exists()) {
+                      return true;
+                  }
       
-      if (!snapshot.exists()) {
-        alert('User not found!');
-        return;
-      }
-
-      const userData = snapshot.val();
-      if (userData.password !== password) {
-        alert('Invalid password!');
-        return;
-      }
-
-      const userDisplayEl = document.getElementById('userDisplayName');
-      if (userDisplayEl) {
-        userDisplayEl.textContent = username;
-      }
+                  const lastSpin = new Date(snapshot.val().lastSpin);
+                  const now = new Date();
+                  const resetTime = new Date();
+                  resetTime.setHours(1, 0, 0, 0);
       
-      updateUserPointsDisplay(userData);
+                  if (now < resetTime) {
+                      resetTime.setDate(resetTime.getDate() - 1);
+                  }
       
-      if (loginContainer) loginContainer.style.display = 'none';
-      if (userDashboard) userDashboard.style.display = 'block';
-
-      // Store current user
-      sessionStorage.setItem('currentUser', username);
+                  return lastSpin < resetTime;
+              }
       
-  // Start timer
-  startTimer();
-
-  // Add real-time points update listener
-
-      const userPointsRef = ref(db, `users/${username}`);
-      onValue(userPointsRef, (snapshot) => {
-        const userData = snapshot.val();
-        updateUserPointsDisplay(userData);
-      });
-
-      checkStartTimerButton();
-      createWheelSections();
-      const spinBtn = document.getElementById('spinBtn');
-      if (spinBtn) {
-        spinBtn.addEventListener('click', spinWheel);
-      }
-      updateLeaderboard();
-      checkAndUpdateBonus();
-      initializeTimer();
-    } catch (error) {
-      console.error(error);
-    }
-  });
-
-  // Add auto-login check on page load
-  window.addEventListener('load', async () => {
-    const savedUsername = sessionStorage.getItem('currentUser');
-    if (savedUsername) {
-      try {
-        const userRef = ref(db, `users/${savedUsername}`);
-        const snapshot = await get(userRef);
-        
-        if (snapshot.exists()) {
-          const userData = snapshot.val();
-          const userDisplayEl = document.getElementById('userDisplayName');
-          if (userDisplayEl) {
-            userDisplayEl.textContent = savedUsername;
-          }
-          
-          updateUserPointsDisplay(userData);
-          
-          if (loginContainer) loginContainer.style.display = 'none';
-          if (userDashboard) userDashboard.style.display = 'block';
-
-          // Initialize all user dashboard features
-          checkStartTimerButton();
-          createWheelSections();
-          const spinBtn = document.getElementById('spinBtn');
-          if (spinBtn) {
-            spinBtn.addEventListener('click', spinWheel);
-          }
-          updateLeaderboard();
-          checkAndUpdateBonus();
-          initializeTimer();
-        }
-      } catch (error) {
-        console.error('Auto-login failed:', error);
-        sessionStorage.removeItem('currentUser');
-      }
-    }
-  });
-
-  // Check and update bonus
-  async function checkAndUpdateBonus() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
+              async function canGetTimerReward(username) {
+                  const rewardsRef = ref(db, 'timerRewards/' + username);
+                  const snapshot = await get(rewardsRef);
+                  
+                  if (!snapshot.exists()) {
+                      return true;
+                  }
       
-      onValue(userRef, (snapshot) => {
-        const userData = snapshot.val();
-        const availableBonus = userData.availableBonus || 0;
-        const lastBonusClaim = userData.lastBonusClaim ? new Date(userData.lastBonusClaim) : new Date(0);
-        const today = new Date();
-        
-        // Update UI
-        document.getElementById('availableBonus').textContent = availableBonus;
-        document.getElementById('claimBonusBtn').disabled = lastBonusClaim.toDateString() === today.toDateString();
-      });
-    } catch (error) {
-      console.error('Failed to check bonus:', error);
-    }
-  }
-
-  document.getElementById('claimBonusBtn').addEventListener('click', async () => {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
+                  const lastReward = new Date(snapshot.val().lastReward);
+                  const now = new Date();
+                  const resetTime = new Date();
+                  resetTime.setHours(1, 0, 0, 0);
       
-      const lastBonusClaim = userData.lastBonusClaim ? new Date(userData.lastBonusClaim) : new Date(0);
-      const today = new Date();
-
-      if (lastBonusClaim.toDateString() === today.toDateString()) {
-        alert('You have already claimed your bonus today');
-        return;
-      }
-
-      const availableBonus = userData.availableBonus || 0;
-      if (availableBonus <= 0) {
-        alert('No bonus available to claim');
-        return;
-      }
-
-      // Update user points and clear bonus
-      const newPoints = (userData.points || 0) + availableBonus;
-      await update(userRef, {
-        points: newPoints,
-        availableBonus: 0,
-        lastBonusClaim: today.toISOString()
-      });
-
-      updateUserPointsDisplay({ points: newPoints });
-      document.getElementById('claimBonusBtn').disabled = true;
-      document.getElementById('availableBonus').textContent = '0';
+                  if (now < resetTime) {
+                      resetTime.setDate(resetTime.getDate() - 1);
+                  }
       
-      alert(`Successfully claimed ${availableBonus} bonus points!`);
-      updateLeaderboard();
-    } catch (error) {
-      console.error('Failed to claim bonus:', error);
-      alert('Failed to claim bonus');
-    }
-  });
-
-  // Check start timer button state
-  async function checkStartTimerButton() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
+                  return lastReward < resetTime;
+              }
       
-      onValue(userRef, (snapshot) => {
-        const userData = snapshot.val();
-        const lastTimerStart = userData.lastTimerStart ? new Date(userData.lastTimerStart) : new Date(0);
-        const today = new Date();
-        
-        // Disable button if already used today
-        document.getElementById('startTimerBtn').disabled = lastTimerStart.toDateString() === today.toDateString();
-      });
-    } catch (error) {
-      console.error('Failed to check timer button state:', error);
-    }
-  }
-
-  // Start timer button functionality
-  document.getElementById('startTimerBtn').addEventListener('click', async () => {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
+              async function updateSpinsRemaining() {
+                  const username = await getCurrentUsername(); // You'll need to implement this
+                  if (!username) return;
       
-      const lastTimerStart = userData.lastTimerStart ? new Date(userData.lastTimerStart) : new Date(0);
-      const today = new Date();
-
-      if (lastTimerStart.toDateString() === today.toDateString()) {
-        alert('You can only start the timer once per day');
-        return;
-      }
-
-      // Reset duration to 60 minutes (3600 seconds)
-      await update(userRef, {
-        lastTimerStart: today.toISOString(),
-        lastBonusClaim: null,
-        lastClaim: null,
-        timerState: {
-          startTime: Date.now(),
-          duration: 3600
-        }
-      });
-
-      document.getElementById('startTimerBtn').disabled = true;
-      alert('Timer reset successful! Starting new 60 minute session.');
+                  const canSpinSlot = await canSpinSlotToday(username);
+                  const canSpinRoulette = await canSpinRouletteToday(username);
+                  
+                  const slotSpinsElement = document.getElementById('spinsRemaining');
+                  const rouletteSpinsElement = document.getElementById('rouletteSpinsRemaining');
+                  
+                  if (slotSpinsElement) {
+                      slotSpinsElement.textContent = canSpinSlot ? 
+                          "You have 1 spin remaining today" : 
+                          "No spins remaining today. Resets at 1 AM";
+                  }
+                  
+                  if (rouletteSpinsElement) {
+                      rouletteSpinsElement.textContent = canSpinRoulette ? 
+                          "You have 1 spin remaining today" : 
+                          "No spins remaining today. Resets at 1 AM";
+                  }
+              }
       
-      // Set initial timer values
-      timeRemaining = 3600;
-      timerStartTime = Date.now();
+              async function getCurrentUsername() {
+                  // Get username from active session in loginLogs
+                  const loginLogsRef = ref(db, 'loginLogs');
+                  const snapshot = await get(loginLogsRef);
+                  if (snapshot.exists()) {
+                      const loginLogs = snapshot.val();
+                      for (const username in loginLogs) {
+                          if (loginLogs[username].status === 'online') {
+                              return username;
+                          }
+                      }
+                  }
+                  return null;
+              }
       
-      checkAndUpdateBonus();
-      startTimer(); // Start the timer with new duration
-    } catch (error) {
-      console.error('Failed to start timer:', error);
-      alert('Failed to start timer');
-    }
-  });
-
-  // Admin functions
-  window.resetPoints = async (username) => {
-    try {
-        const userRef = ref(db, `users/${username}`);
-        
-        await update(userRef, { 
-            points: 0, // Reset regular points to 0
-            starPoints: 0, // Reset star points to 0
-            lastClaim: null,
-            lastSpin: null,
-            lastBonusClaim: null,
-            lastTimerStart: null,
-            availableBonus: 0 // Reset available bonus to 0
-        });
-        
-        alert('Reset successful! All points have been set to zero.');
-        loadUserList(); // Refresh the user list display
-    } catch (error) {
-        console.error('Reset failed:', error);
-        alert('Failed to reset user!');
-    }
-  };
-  
-  window.deleteUser = async (username) => {
-    if (!confirm(`Are you sure you want to delete user ${username}?`)) return;
-    
-    try {
-      await remove(ref(db, 'users/' + username));
-      alert('User deleted successfully!');
-      loadUserList();
-    } catch (error) {
-      console.error(error);
-      alert('Failed to delete user!');
-    }
-  };
-  
-  // Donation functionality
-  document.getElementById('donateBtn').addEventListener('click', async () => {
-    const donorUsername = sessionStorage.getItem('currentUser');
-    const recipientUsername = document.getElementById('donateUsername').value.trim();
-    
-    if (!donorUsername || !recipientUsername) {
-      alert('Please enter a username to donate to');
-      return;
-    }
-
-    if (donorUsername === recipientUsername) {
-      alert('You cannot donate to yourself');
-      return;
-    }
-
-    try {
-      const donorRef = ref(db, `users/${donorUsername}`);
-      const recipientRef = ref(db, `users/${recipientUsername}`);
+              async function updateTimerRewardStatus() {
+                  const username = await getCurrentUsername();
+                  if (!username) return;
+                  
+                  const canReward = await canGetTimerReward(username);
+                  const timerDisplay = document.getElementById('timerDisplay');
+                  
+                  if (timerDisplay) {
+                      timerDisplay.setAttribute('data-reward-available', canReward);
+                  }
+              }
       
-      // Get donor data
-      const donorSnapshot = await get(donorRef);
-      if (!donorSnapshot.exists()) {
-        alert('Error accessing your account');
-        return;
-      }
+              const isPointsDisplayReady = () => {
+                  return document.getElementById('regularPoints') && 
+                         document.getElementById('starPoints');
+              };
       
-      // Get recipient data
-      const recipientSnapshot = await get(recipientRef);
-      if (!recipientSnapshot.exists()) {
-        alert('Recipient user not found');
-        return;
-      }
+              function updatePointsDisplay() {
+                  const regularPointsElement = document.getElementById('regularPoints');
+                  const starPointsElement = document.getElementById('starPoints');
+                  const availableStarPoints = document.getElementById('availableStarPoints');
+                  const convertBtn = document.getElementById('convertBtn');
       
-      const donorData = donorSnapshot.val();
-      const recipientData = recipientSnapshot.val();
+                  // Only update if elements exist
+                  if (regularPointsElement) {
+                      regularPointsElement.textContent = regularPoints;
+                  }
+                  
+                  if (starPointsElement) {
+                      starPointsElement.textContent = starPoints;
+                  }
+                  
+                  // Update conversion box if elements exist
+                  if (availableStarPoints) {
+                      availableStarPoints.textContent = starPoints;
+                  }
+                  if (convertBtn) {
+                      convertBtn.disabled = starPoints < 200;
+                  }
+                  
+                  updateDonationStatus(); // Update donation button status
+              }
       
-      // Ensure starPoints are numbers with default of 0
-      const donorStarPoints = parseInt(donorData.starPoints || 0);
-      const recipientStarPoints = parseInt(recipientData.starPoints || 0);
+              function updateDonationStatus() {
+                  const donateBtn = document.getElementById('donateBtn');
+                  if (donateBtn) {
+                      donateBtn.disabled = starPoints < 50;
+                  }
+              }
       
-      // Check if donor has enough star points
-      if (donorStarPoints < 50) {
-        alert('You need at least 50 star points to make a donation');
-        return;
-      }
+              // Modify showMainPage to ensure points are updated only after DOM is ready
+              function showMainPage(username) {
+                  const pointsRef = ref(db, 'userPoints/' + username);
+                  get(pointsRef).then((snapshot) => {
+                      if (snapshot.exists()) {
+                          const data = snapshot.val();
+                          regularPoints = data.regularPoints || 0;
+                          starPoints = data.starPoints || 0;
+                          
+                          // Wait for DOM elements before updating display
+                          const checkElements = setInterval(() => {
+                              if (isPointsDisplayReady()) {
+                                  clearInterval(checkElements);
+                                  updatePointsDisplay();
+                              }
+                          }, 100);
+                      }
+                  });
       
-      // Update both users' star points
-      await update(donorRef, {
-        starPoints: donorStarPoints - 50,
-        lastSpin: null // Reset spin to allow one free spin
-      });
+                  const form = document.querySelector('.form');
+                  const mainPageHTML = `
+                      <div class="user-info-container">
+                          <h2>Welcome, ${username}!</h2>
+                          <div class="points-container">
+                              <div class="points-display">
+                                  Regular Points
+                                  <span id="regularPoints">${regularPoints}</span>
+                              </div>
+                              <div class="points-display">
+                                  Star Points
+                                  <span id="starPoints">${starPoints}</span>
+                              </div>
+                          </div>
+                      </div>
+                      <!-- Rest of the existing HTML content remains the same -->
+                      <div class="timer-container" style="margin: 15px 0;">
+                          <div id="timerDisplay" class="timer-display">60:00</div>
+                          <div class="progress-bar">
+                              <div id="progress" class="progress"></div>
+                          </div>
+                          <div class="button-container">
+                              <button id="pauseButton" class="sub">Pause</button>
+                          </div>
+                      </div>
+                      <div class="slot-machine">
+                          <h3 style="color: #8f94fb;">Slot Machine</h3>
+                          <div class="spins-remaining" id="spinsRemaining">Checking spins remaining...</div>
+                          <div class="slots">
+                              <div class="slot" id="slot1">-</div>
+                              <div class="slot" id="slot2">-</div>
+                              <div class="slot" id="slot3">-</div>
+                          </div>
+                          <button class="spin-btn" id="spinBtn">Spin</button>
+                          <div class="result" id="result"></div>
+                          <div class="points" id="points">Star Points: 0</div>
+                      </div>
+                      <div class="roulette-wheel">
+                          <h3 style="color: #8f94fb;">Roulette Wheel</h3>
+                          <div class="spins-remaining" id="rouletteSpinsRemaining">Checking spins remaining...</div>
+                          <div class="wheel-container">
+                              <div class="wheel" id="wheel">
+                                  <svg viewBox="0 0 100 100">
+                                      <circle cx="50" cy="50" r="45" fill="#263238" />
+                                      <circle cx="50" cy="50" r="42" fill="#37474F" />
+                                      <g id="numbers"></g>
+                                  </svg>
+                              </div>
+                              <div class="center-dome"></div>
+                              <div class="pointer"></div>
+                          </div>
+                          <button class="sub" id="spinRouletteBtn">Spin Roulette</button>
+                          <div class="result" id="rouletteResult"></div>
+                      </div>
+                      
+                      <!-- Donation Box -->
+                      <div class="donation-box">
+                          <h3 style="color: #8f94fb;">Donate Star Points</h3>
+                          <div class="donation-info">
+                              <p>Donate 25 star points to another user</p>
+                              <p>Donation fee: 25 star points</p>
+                              <p>Total cost: 50 star points</p>
+                          </div>
+                          <div class="inputbox" style="margin-top: 10px;">
+                              <input type="text" id="donateUsername" required>
+                              <span>Recipient Username</span>
+                          </div>
+                          <button class="sub" id="donateBtn" ${starPoints < 50 ? 'disabled' : ''}>Donate Star Points</button>
+                      </div>
       
-      await update(recipientRef, {
-        starPoints: recipientStarPoints + 25
-      });
+                      <!-- Moved Convert Star Points box here -->
+                      <div class="conversion-box">
+                          <h3 style="color: #8f94fb;">Convert Star Points</h3>
+                          <div class="conversion-info">
+                              <p>200 Star Points = 15 Regular Points</p>
+                              <p>Your available star points: <span id="availableStarPoints">${starPoints}</span></p>
+                          </div>
+                          <button class="sub" id="convertBtn" ${starPoints < 200 ? 'disabled' : ''}>Convert Points</button>
+                      </div>
+                      <button class="sub" id="logoutBtn">Logout</button>
+                      <button class="sub" id="top20Btn" style="margin-top: 10px;">Top 20 Players</button>
+                  `;
+                  form.innerHTML = mainPageHTML;
       
-      alert(`Successfully donated 25 star points to ${recipientUsername}! You can now spin the wheel once.`);
-      document.getElementById('donateUsername').value = '';
+                  // Initialize timer after the main page elements are added to DOM
+                  setTimeout(() => {
+                      initializeTimer(); // Small delay to ensure DOM is ready
+                  }, 100);
       
-      // Enable spin button immediately after successful donation
-      document.getElementById('spinBtn').disabled = false;
+                  // Timer functionality
+                  let timerInterval;
+                  const totalDuration = 3600; // 60 minutes in seconds
+                  let endTime;
+                  let isPaused = false;
       
-      // Update leaderboard
-      updateLeaderboard();
-    } catch (error) {
-      console.error('Donation failed:', error);
-      alert('Failed to process donation');
-    }
-  });
-
-  // Logout functions
-  document.getElementById('adminLogout')?.addEventListener('click', () => {
-    if (notificationsListener) {
-      notificationsListener();
-      notificationsListener = null; // Clear the reference
-    }
-    adminContainer.style.display = 'none';
-    loginContainer.style.display = 'block';
-    loginForm.reset();
-  });
-  
-  document.getElementById('userLogout')?.addEventListener('click', async () => {
-    // Remove leaderboard listener if it exists
-    if (leaderboardListener) {
-      leaderboardListener();
-      leaderboardListener = null; // Clear the reference
-    }
-    userDashboard.style.display = 'none';
-    loginContainer.style.display = 'block';
-    loginForm.reset();
-    sessionStorage.removeItem('currentUser');
-    clearInterval(timerInterval);
-  });
-  
-  // Timer functions
-  let timerInterval;
-  let timeRemaining;  
-  let timerStartTime; // Add this to track when timer started
- 
-  function displayTimer(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    
-    document.getElementById('timerMinutes').textContent = String(minutes).padStart(2, '0');
-    document.getElementById('timerSeconds').textContent = String(remainingSeconds).padStart(2, '0');
-    
-    const progress = (seconds / timeRemaining) * 100;
-    document.getElementById('timerProgressBar').style.width = `${progress}%`;
-  }
-
-  function startTimer() {
-    clearInterval(timerInterval);
-    timerStartTime = Date.now(); // Record start time
-    displayTimer(timeRemaining);
-    
-    // Save initial timer state with actual timestamp
-    saveTimerState();
-    
-    timerInterval = setInterval(async () => {
-      const elapsedSeconds = Math.floor((Date.now() - timerStartTime) / 1000);
-      const remaining = Math.max(0, Math.floor(timeRemaining - elapsedSeconds));
+                  async function saveTimerState(remainingTime, startTime, pauseTime) {
+                      try {
+                          await set(ref(db, 'timerState/' + username), {
+                              remainingTime,
+                              startTime,
+                              pauseTime,
+                              timestamp: Date.now()
+                          });
+                      } catch (error) {
+                          console.error("Error saving timer state:", error);
+                      }
+                  }
       
-      // Update the duration in real-time
-      updateDuration(remaining);
+                  async function loadTimerState() {
+                      try {
+                          const snapshot = await get(ref(db, 'timerState/' + username));
+                          return snapshot.exists() ? snapshot.val() : null;
+                      } catch (error) {
+                          console.error("Error loading timer state:", error);
+                          return null;
+                      }
+                  }
       
-      displayTimer(remaining);
-      saveTimerState();
-
-      if (remaining <= 0) {
-        clearInterval(timerInterval);
-        await awardPoint();
-      }
-    }, 1000);
-  }
-
-  // Add new function to update duration
-  async function updateDuration(remaining) {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}/timerState`);
-      await update(userRef, {
-        duration: remaining
-      });
-    } catch (error) {
-      console.error('Failed to update duration:', error);
-    }
-  }
-
-  async function awardPoint() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      // Check if user already claimed today
-      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : null;
-      const today = new Date();
+                  function updateProgress(timeRemaining) {
+                      const progress = document.getElementById('progress');
+                      if (!progress) {
+                          console.warn('Progress bar element not found');
+                          return;
+                      }
+                      const progressPercentage = (timeRemaining / totalDuration) * 100;
+                      progress.style.transform = `scaleX(${progressPercentage / 100})`;
+                  }
       
-      if (lastClaim && lastClaim.toDateString() === today.toDateString()) {
-          alert('You have already claimed your point today! Come back tomorrow.');
-          clearInterval(timerInterval);
-          return;
-      }
-
-      const newPoints = (userData.points || 0) + 1;
-      await update(userRef, {
-        points: newPoints,
-        lastClaim: today.toISOString()
-      });
-
-      updateUserPointsDisplay({ points: newPoints });
-      await createNotification(username, newPoints);
-      updateLeaderboard();
+                  function displayTimer(seconds) {
+                      const timerDisplay = document.getElementById('timerDisplay');
+                      if (!timerDisplay) {
+                          console.warn('Timer display element not found');
+                          return;
+                      }
+                      const minutes = Math.floor(seconds / 60);
+                      const remainingSeconds = seconds % 60;
+                      const formattedTime = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+                      timerDisplay.textContent = formattedTime;
+                  }
       
-      alert('Congratulations! You have claimed your daily point.');
+                  function startTimer(initialTime) {
+                      if (!document.getElementById('timerDisplay')) {
+                          console.warn('Timer display not ready, retrying...');
+                          setTimeout(() => startTimer(initialTime), 100);
+                          return;
+                      }
       
-    } catch (error) {
-      console.error('Failed to award point:', error);
-    }
-  }
-
-  // Timer persistence functionality
-  async function initializeTimer() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      if (userData.timerState) {
-        const savedState = userData.timerState;
-        const now = Date.now();
-        const elapsedTime = Math.floor((now - savedState.startTime) / 1000);
-        
-        // Use saved duration
-        timeRemaining = savedState.duration;
-        const actualRemaining = Math.max(0, timeRemaining - elapsedTime);
-        
-        if (actualRemaining > 0) {
-          timeRemaining = actualRemaining;
-          timerStartTime = now - (elapsedTime * 1000);
-          startTimer();
-        } else {
-          await awardPoint();
-          await startUserTimer(username);
-        }
-      } else {
-        await startUserTimer(username);
-      }
-    } catch (error) {
-      console.error('Failed to initialize timer:', error);
-    }
-  }
-
-  // Add the new startUserTimer function
-  async function startUserTimer(username) {
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      // Check if user already claimed today
-      const lastClaim = userData.lastClaim ? new Date(userData.lastClaim) : null;
-      const today = new Date();
+                      clearInterval(timerInterval);
+                      const duration = initialTime || totalDuration;
+                      endTime = Date.now() + (duration * 1000);
       
-      if (lastClaim && lastClaim.toDateString() === today.toDateString()) {
-          alert('You have already claimed your point today! Come back tomorrow.');
-          return;
-      }
-
-      // Always start with 60 minutes
-      timeRemaining = 3600;
-      timerStartTime = Date.now();
-      startTimer();
-    } catch (error) {
-      console.error("Error starting timer for user:", username, error);
-    }
-  }
-
-  // Update saveTimerState function
-  async function saveTimerState() {
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}/timerState`);
-      await update(userRef, {
-        startTime: timerStartTime,
-        duration: timeRemaining // Use current timeRemaining value
-      });
-    } catch (error) {
-      console.error('Failed to save timer state:', error);
-    }
-  }
-
-  // Roulette functionality
-  let wheelSpinning = false;
-  const WHEEL_SECTIONS = 20; // Changed from 10 to 20
-
-  // Create wheel sections with rewards
-  function createWheelSections() {
-    const wheel = document.querySelector('.roulette-wheel');
-    for (let i = 0; i < WHEEL_SECTIONS; i++) {
-      const section = document.createElement('div');
-      section.className = 'wheel-section';
-      section.style.transform = `rotate(${i * (360 / WHEEL_SECTIONS)}deg)`;
-      section.style.backgroundColor = i === 0 ? '#ffd700' : `hsl(${i * (360/WHEEL_SECTIONS)}, 70%, 50%)`;
-      section.textContent = i === 0 ? 'JACKPOT' : `${Math.floor(Math.random() * 21 + 10)}`; // Changed to 10-30 range
-      wheel.appendChild(section);
-    }
-  }
-
-  // Spin wheel functionality
-  async function spinWheel() {
-    if (wheelSpinning) return;
-    
-    const username = sessionStorage.getItem('currentUser');
-    if (!username) return;
-
-    try {
-      const userRef = ref(db, `users/${username}`);
-      const snapshot = await get(userRef);
-      const userData = snapshot.val();
-
-      // More explicit handling of lastSpin for new users
-      const lastSpin = userData.lastSpin ? new Date(userData.lastSpin) : null;
-      const today = new Date();
+                      timerInterval = setInterval(async () => {
+                          if (!isPaused) {
+                              const currentTime = Date.now();
+                              const timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
       
-      // Allow spin if lastSpin is null (new user) or from a different day
-      if (lastSpin && lastSpin.toDateString() === today.toDateString()) {
-        alert('You can only spin once per day!');
-        return;
-      }
-
-      wheelSpinning = true;
-      document.getElementById('spinBtn').disabled = true;
-
-      // 25% chance of winning jackpot
-      const willWin = Math.random() < 0.25;
-      const rotations = 5; // Number of full rotations
-      const section = willWin ? 0 : Math.floor(Math.random() * 19) + 1;
-      const degree = rotations * 360 + (section * (360 / WHEEL_SECTIONS));
+                              displayTimer(timeRemaining);
+                              updateProgress(timeRemaining);
       
-      const wheel = document.querySelector('.roulette-wheel');
-      wheel.style.transform = `rotate(${degree}deg)`;
-
-      setTimeout(async () => {
-        wheelSpinning = false;
-        
-        // Ensure points and starPoints are numbers
-        const points = parseInt(userData.points || 0);
-        const starPoints = parseInt(userData.starPoints || 0);
-        
-        if (willWin) {
-          await update(userRef, {
-            points: points + 1,
-            lastSpin: today.toISOString()
-          });
-          alert('Congratulations! You won a regular point!');
-        } else {
-          // Parse the reward as integer and ensure it's a valid number
-          const reward = parseInt(wheel.children[section].textContent);
-          if (isNaN(reward)) {
-            console.error('Invalid reward value');
-            return;
-          }
-          
-          await update(userRef, {
-            starPoints: starPoints + reward,
-            lastSpin: today.toISOString()
-          });
-          alert(`You won ${reward} star points!`);
-        }
-        
-        updateLeaderboard();
-      }, 4000);
-
-    } catch (error) {
-      console.error('Failed to spin wheel:', error);
-      alert('Failed to spin wheel');
-    }
-  }
-
-  // Add window beforeunload handler
-  window.addEventListener('beforeunload', async () => {
-    // Remove timer state saving functionality
-  });
-    </script>
-      <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
-      <script src="comfetti.js"></script>
-      <script src="timeraward.js"></script>
-      <script src="reload.js"></script>
-      </body>
-      </html>
-
+                              if (timeRemaining <= 0) {
+                                  clearInterval(timerInterval);
+                                  
+                                  // Check if user can get reward today
+                                  const canReward = await canGetTimerReward(username);
+                                  if (canReward) {
+                                      // Add reward
+                                      regularPoints += 1;
+                                      updatePointsDisplay();
+                                      savePointsToDatabase();
+                                      
+                                      // Record the reward
+                                      const timerRewardsRef = ref(db, 'timerRewards/' + username);
+                                      await set(timerRewardsRef, {
+                                          timestamp: Date.now(),
+                                          lastReward: new Date().toISOString()
+                                      });
+                                      
+                                      alert("Congratulations! You've earned 1 regular point from completing the timer!");
+                                      triggerConfetti();
+                                  } else {
+                                      alert("Timer completed! You've already received your daily timer reward. Next reward available at 1 AM.");
+                                  }
+                              }
+                          }
+                      }, 1000);
+                  }
+      
+                  async function initializeTimer() {
+                      const savedState = await loadTimerState();
+                      if (savedState) {
+                          const { remainingTime, startTime, pauseTime } = savedState;
+                          
+                          if (startTime && pauseTime) {
+                              const elapsed = pauseTime - startTime;
+                              const actualRemaining = Math.max(0, remainingTime - Math.floor(elapsed / 1000));
+                              startTimer(actualRemaining);
+                          } else if (remainingTime) {
+                              startTimer(remainingTime);
+                          }
+                      } else {
+                          startTimer(totalDuration);
+                      }
+                      
+                      await saveTimerState(totalDuration, Date.now(), null);
+                      await updateTimerRewardStatus(); // Add this line
+                  }
+      
+                  // Update pause button functionality
+                  const pauseButton = document.getElementById('pauseButton');
+                  if (pauseButton) {
+                      pauseButton.addEventListener('click', async () => {
+                          isPaused = !isPaused;
+                          pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+                          
+                          if (isPaused) {
+                              const currentTime = Date.now();
+                              const timeRemaining = Math.floor((endTime - currentTime) / 1000);
+                              
+                              await saveTimerState(
+                                  timeRemaining,
+                                  null, // Clear start time
+                                  Date.now() // Set pause time
+                              );
+                          } else {
+                              const savedState = await loadTimerState();
+                              if (savedState && savedState.remainingTime) {
+                                  startTimer(savedState.remainingTime);
+                                  await saveTimerState(
+                                      savedState.remainingTime,
+                                      Date.now(), // New start time
+                                      null // Clear pause time
+                                  );
+                              }
+                          }
+                      });
+                  }
+      
+                  // Update points display
+                  function updatePointsDisplay() {
+                      const regularPointsElement = document.getElementById('regularPoints');
+                      const starPointsElement = document.getElementById('starPoints');
+                      const availableStarPoints = document.getElementById('availableStarPoints');
+                      const convertBtn = document.getElementById('convertBtn');
+      
+                      // Only update if elements exist
+                      if (regularPointsElement) {
+                          regularPointsElement.textContent = regularPoints;
+                      }
+                      
+                      if (starPointsElement) {
+                          starPointsElement.textContent = starPoints;
+                      }
+                      
+                      // Update conversion box if elements exist
+                      if (availableStarPoints) {
+                          availableStarPoints.textContent = starPoints;
+                      }
+                      if (convertBtn) {
+                          convertBtn.disabled = starPoints < 200;
+                      }
+                      
+                      updateDonationStatus(); // Update donation button status
+                  }
+      
+                  function updateDonationStatus() {
+                      const donateBtn = document.getElementById('donateBtn');
+                      if (donateBtn) {
+                          donateBtn.disabled = starPoints < 50;
+                      }
+                  }
+      
+                  function savePointsToDatabase() {
+                      const pointsRef = ref(db, 'userPoints/' + username);
+                      set(pointsRef, {
+                          regularPoints: regularPoints,
+                          starPoints: starPoints,
+                          lastUpdated: Date.now()
+                      });
+                  }
+      
+                  function triggerConfetti() {
+                      // Position confetti in center of screen
+                      const centerX = window.innerWidth / 2;
+                      const centerY = window.innerHeight / 2;
+                      
+                      confetti({
+                          particleCount: 100,
+                          spread: 70,
+                          origin: { 
+                              x: centerX / window.innerWidth,
+                              y: centerY / window.innerHeight
+                          },
+                          colors: ['#4e54c8', '#8f94fb', '#ff69b4', '#800080'],
+                          startVelocity: 30,
+                          gravity: 0.5,
+                          scalar: 0.7
+                      });
+                  }
+      
+                  document.getElementById("logoutBtn").addEventListener('click', () => {
+                      const loginLogRef = ref(db, 'loginLogs/' + username);
+                      set(loginLogRef, null)
+                          .then(() => {
+                              showLoginForm();
+                          })
+                          .catch((error) => {
+                              alert("Error during logout: " + error.message);
+                              showLoginForm();
+                          });
+                  });
+      
+                  const letters = ['J', 'N', 'S'];
+                  const slots = Array.from(document.querySelectorAll('.slot'));
+                  const spinBtn = document.getElementById('spinBtn');
+      
+                  if (spinBtn && slots.length === 3) {
+                      spinBtn.addEventListener('click', async () => {
+                          // Generate results first
+                          const results = [];
+                          for (let i = 0; i < 3; i++) {
+                              results.push(letters[Math.floor(Math.random() * letters.length)]);
+                          }
+      
+                          // Check for bonus spins first
+                          const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                          const bonusSnapshot = await get(bonusSpinRef);
+                          let usingBonusSpin = false;
+                          
+                          if (bonusSnapshot.exists() && bonusSnapshot.val().spinsRemaining > 0) {
+                              usingBonusSpin = true;
+                              // Decrement bonus spin
+                              await set(bonusSpinRef, {
+                                  timestamp: Date.now(),
+                                  spinsRemaining: bonusSnapshot.val().spinsRemaining - 1
+                              });
+                          } else {
+                              const canSpin = await canSpinSlotToday(username);
+                              if (!canSpin) {
+                                  const now = new Date();
+                                  const nextReset = new Date();
+                                  nextReset.setHours(1, 0, 0, 0);
+                                  if (now.getHours() >= 1) {
+                                      nextReset.setDate(nextReset.getDate() + 1);
+                                  }
+                                  
+                                  const timeUntilReset = nextReset - now;
+                                  const hoursUntilReset = Math.floor(timeUntilReset / (1000 * 60 * 60));
+                                  const minutesUntilReset = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+                                  
+                                  alert(`You've already used your daily spin! Next spin available at 1 AM (in ${hoursUntilReset}h ${minutesUntilReset}m)`);
+                                  return;
+                              }
+                          }
+      
+                          // If not using bonus spin, record the regular daily spin
+                          if (!usingBonusSpin) {
+                              const slotSpinsRef = ref(db, 'slotSpins/' + username);
+                              await set(slotSpinsRef, {
+                                  timestamp: Date.now(),
+                                  lastSpin: new Date().toISOString()
+                              });
+                          }
+                          
+                          slots.forEach(slot => slot.classList.add('spinning'));
+                          
+                          let counter = 0;
+                          const animationInterval = setInterval(() => {
+                              slots.forEach(slot => {
+                                  slot.textContent = letters[Math.floor(Math.random() * letters.length)];
+                              });
+                              counter++;
+                              
+                              if (counter >= 20) {
+                                  clearInterval(animationInterval);
+                                  slots.forEach(slot => slot.classList.remove('spinning'));
+                                  
+                                  slots.forEach((slot, index) => {
+                                      slot.textContent = results[index];
+                                  });
+                                  
+                                  let prize = 0;
+                                  const resultString = results.join('');
+                                  
+                                  if(resultString === 'JNS') {
+                                      prize = 20; 
+                                      regularPoints += 1; // Add regular points for jackpot
+                                      starPoints += prize;
+                                      document.getElementById('result').textContent = '🎉 JACKPOT! You won 20 star points! 🎉';
+                                  } else {
+                                      prize = Math.floor(Math.random() * 10) + 10;
+                                      regularPoints += 0; // Add regular points for normal win
+                                      starPoints += prize;
+                                      document.getElementById('result').textContent = `🌟 You won ${prize} star points! 🌟`;
+                                  }
+                                  
+                                  updatePointsDisplay();
+                                  savePointsToDatabase();
+                                  
+                                  const pointsDisplay = document.getElementById('points');
+                                  if (pointsDisplay) {
+                                      pointsDisplay.textContent = `⭐ Star Points: ${starPoints}`;
+                                  }
+      
+                                  // Add this line to trigger confetti
+                                  triggerConfetti();
+      
+                                  spinBtn.disabled = false;
+                              }
+                          }, 50);
+                      });
+                  }
+      
+                  // Roulette Wheel Functionality
+                  const wheel = document.getElementById('wheel');
+                  const spinRouletteBtn = document.getElementById('spinRouletteBtn');
+                  let isSpinning = false;
+      
+                  function initializeRouletteWheel() {
+                      const numbers = Array.from({ length: 38 }, (_, i) => Math.floor(Math.random() * 11) + 10);
+                      const jackpotIndex = Math.floor(Math.random() * 38);
+                      const colors = ['#e63946', '#333'];
+                      const totalNumbers = numbers.length;
+                      const anglePerSector = 360 / totalNumbers;
+                      let sectors = [];
+      
+                      const numberGroup = wheel.querySelector('#numbers');
+      
+                      numbers.forEach((number, index) => {
+                          const angle = index * anglePerSector;
+                          let color = index === jackpotIndex ? '#4CAF50' : colors[index % 2];
+      
+                          const startAngle = (angle - anglePerSector / 2) * Math.PI / 180;
+                          const endAngle = (angle + anglePerSector / 2) * Math.PI / 180;
+                          const x1 = 50 + 40 * Math.cos(startAngle);
+                          const y1 = 50 + 40 * Math.sin(startAngle);
+                          const x2 = 50 + 40 * Math.cos(endAngle);
+                          const y2 = 50 + 40 * Math.sin(endAngle);
+      
+                          const sector = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                          sector.setAttribute("d", `M50,50 L${x1},${y1} A40,40 0 0,1 ${x2},${y2} Z`);
+                          sector.setAttribute("fill", color);
+                          sector.addEventListener('mouseover', () => {
+                              sector.classList.add('sector-highlight');
+                          });
+                          sector.addEventListener('mouseout', () => {
+                              sector.classList.remove('sector-highlight');
+                          });
+                          numberGroup.appendChild(sector);
+                          sectors.push({ sector, number, isJackpot: index === jackpotIndex });
+      
+                          const textAngle = angle * Math.PI / 180;
+                          const textX = 50 + 35 * Math.cos(textAngle);
+                          const textY = 50 + 35 * Math.sin(textAngle);
+                          const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                          text.setAttribute("x", textX);
+                          text.setAttribute("y", textY);
+                          text.setAttribute("fill", "white");
+                          text.setAttribute("font-size", index === jackpotIndex ? "5" : "4");
+                          text.setAttribute("text-anchor", "middle");
+                          text.setAttribute("dominant-baseline", "middle");
+                          text.textContent = index === jackpotIndex ? "JP" : number;
+                          numberGroup.appendChild(text);
+                      });
+      
+                      return { numbers, sectors, jackpotIndex, totalNumbers, anglePerSector };
+                  }
+      
+                  const rouletteData = initializeRouletteWheel();
+      
+                  if (spinRouletteBtn) {
+                      spinRouletteBtn.addEventListener('click', async () => {
+                          const canSpin = await canSpinRouletteToday(username);
+                          
+                          if (!canSpin) {
+                              const now = new Date();
+                              const nextReset = new Date();
+                              nextReset.setHours(1, 0, 0, 0);
+                              if (now.getHours() >= 1) {
+                                  nextReset.setDate(nextReset.getDate() + 1);
+                              }
+                              
+                              const timeUntilReset = nextReset - now;
+                              const hoursUntilReset = Math.floor(timeUntilReset / (1000 * 60 * 60));
+                              const minutesUntilReset = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+                              
+                              alert(`You've already used your daily roulette spin! Next spin available at 1 AM (in ${hoursUntilReset}h ${minutesUntilReset}m)`);
+                              return;
+                          }
+                          if (isSpinning) return;
+                          isSpinning = true;
+      
+                          // Record the spin
+                          const rouletteSpinsRef = ref(db, 'rouletteSpins/' + username);
+                          await set(rouletteSpinsRef, {
+                              timestamp: Date.now(),
+                              lastSpin: new Date().toISOString()
+                          });
+      
+                          // Clear any previous result
+                          const resultElement = document.querySelector('#rouletteResult');
+                          if (resultElement) {
+                              resultElement.textContent = '';
+                          }
+      
+                          // Remove previous winning highlight if any
+                          document.querySelectorAll('.winning-sector').forEach(el => {
+                              el.classList.remove('winning-sector');
+                          });
+      
+                          const spinDuration = 4000;
+                          const winningIndex = Math.floor(Math.random() * rouletteData.totalNumbers);
+                          const winningNumber = rouletteData.numbers[winningIndex];
+                          const isJackpotWin = winningIndex === rouletteData.jackpotIndex;
+                          const wheelRotations = 10;
+                          const wheelFinalRotation = (wheelRotations * 360) + (360 - (winningIndex * rouletteData.anglePerSector));
+      
+                          wheel.style.transition = `transform ${spinDuration}ms cubic-bezier(0.2, 0, 0.2, 1)`;
+                          wheel.style.transform = `rotate(${wheelFinalRotation}deg)`;
+      
+                          setTimeout(() => {
+                              isSpinning = false;
+                              
+                              // Add winning highlight
+                              rouletteData.sectors[winningIndex].sector.classList.add('winning-sector');
+                              
+                              if (isJackpotWin) {
+                                  regularPoints += 2;
+                                  document.getElementById('regularPoints').textContent = regularPoints;
+                              } else {
+                                  starPoints += winningNumber;
+                                  document.getElementById('starPoints').textContent = starPoints;
+                              }
+      
+                              savePointsToDatabase();
+      
+                              setTimeout(() => {
+                                  const resultText = isJackpotWin ? 
+                                      'JACKPOT! You won 2 regular points!' : 
+                                      `You won ${winningNumber} star points!`;
+                                  
+                                  // Show alert
+                                  alert(isJackpotWin ? `JACKPOT!! You win 50 regular points!` : `Congratz!! You win ${winningNumber} Star points!`);
+                                  
+                                  // Update result text if element exists
+                                  const resultElement = document.querySelector('#rouletteResult');
+                                  if (resultElement) {
+                                      resultElement.textContent = resultText;
+                                  }
+      
+                                  // Trigger confetti
+                                  triggerConfetti();
+                              }, 100);
+                          }, spinDuration);
+                      });
+                  }
+      
+                  // Add functionality for Top 20 Players Button
+                  const top20Btn = document.getElementById('top20Btn');
+                  if (top20Btn) {
+                      top20Btn.addEventListener('click', showTop20Page);
+                  }
+      
+                  // Add conversion functionality
+                  function handleConversion() {
+                      if (starPoints >= 200) {
+                          const confirmConvert = confirm("Convert 200 star points to 15 regular points?");
+                          if (confirmConvert) {
+                              starPoints -= 200;
+                              regularPoints += 15;
+      
+                              // Update displays
+                              updatePointsDisplay();
+                              const availableStarPoints = document.getElementById('availableStarPoints');
+                              if (availableStarPoints) {
+                                  availableStarPoints.textContent = starPoints;
+                              }
+      
+                              // Update convert button state
+                              const convertBtn = document.getElementById('convertBtn');
+                              if (convertBtn) {
+                                  convertBtn.disabled = starPoints < 200;
+                              }
+      
+                              // Save to database
+                              savePointsToDatabase();
+      
+                              // Show success message
+                              alert("Successfully converted 200 star points to 15 regular points!");
+                          }
+                      } else {
+                          alert("You need at least 200 star points to convert!");
+                      }
+                  }
+      
+                  const convertBtn = document.getElementById('convertBtn');
+                  if (convertBtn) {
+                      convertBtn.addEventListener('click', handleConversion);
+                  }
+      
+                  // Modify handleDonation function to add bonus spin
+                  function handleDonation() {
+                      const recipientUsername = document.getElementById('donateUsername').value.trim();
+                      
+                      if (!recipientUsername) {
+                          alert("Please enter a recipient username!");
+                          return;
+                      }
+      
+                      if (recipientUsername === username) {
+                          alert("You cannot donate to yourself!");
+                          return;
+                      }
+      
+                      if (starPoints < 50) {
+                          alert("You need at least 50 star points to make a donation!");
+                          return;
+                      }
+      
+                      // Check if recipient exists
+                      const recipientRef = ref(db, 'userPoints/' + recipientUsername);
+                      get(recipientRef).then((snapshot) => {
+                          if(snapshot.exists()) {
+                              const confirmDonate = confirm(`Confirm donation to ${recipientUsername}?\nCost: 50 star points\nUser will receive: 25 star points\nBonus: You'll receive 1 free slot machine spin!`);
+                              if (confirmDonate) {
+                                  // Deduct points from donor
+                                  starPoints -= 50;
+                                  
+                                  // Add points to recipient
+                                  const recipientData = snapshot.val();
+                                  const recipientStarPoints = (recipientData.starPoints || 0) + 25;
+                                  
+                                  // Add bonus spin to donor
+                                  const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                                  set(bonusSpinRef, {
+                                      timestamp: Date.now(),
+                                      spinsRemaining: 1
+                                  });
+                                  
+                                  // Update recipient's points
+                                  set(recipientRef, {
+                                      ...recipientData,
+                                      starPoints: recipientStarPoints,
+                                      lastUpdated: Date.now()
+                                  }).then(() => {
+                                      // Update donor's points
+                                      savePointsToDatabase();
+                                      updatePointsDisplay();
+                                      updateDonationStatus();
+                                      
+                                      // Show success message
+                                      alert("Donation successful! You've received 1 free slot machine spin!");
+                                      
+                                      // Update spins remaining display
+                                      updateSpinsRemaining();
+                                      
+                                      // Clear input field
+                                      document.getElementById('donateUsername').value = '';
+                                  }).catch((error) => {
+                                      alert("Error processing donation: " + error.message);
+                                      // Rollback points if error occurs
+                                      starPoints += 50;
+                                      updatePointsDisplay();
+                                  });
+                              }
+                          } else {
+                              alert("Recipient username not found!");
+                          }
+                      }).catch((error) => {
+                          alert("Error checking recipient: " + error.message);
+                      });
+                  }
+      
+                  // Add event listener for donate button
+                  const donateBtn = document.getElementById('donateBtn');
+                  if (donateBtn) {
+                      donateBtn.addEventListener('click', handleDonation);
+                      updateDonationStatus(); // Initial status update
+                  }
+      
+                  // Update spins remaining display on page load
+                  updateSpinsRemaining();
+                  // Update the display every minute
+                  setInterval(updateSpinsRemaining, 60000);
+              }
+      
+              async function showTop20Page() {
+                  const userPointsRef = ref(db, 'userPoints');
+                  const snapshot = await get(userPointsRef);
+                  
+                  let players = [];
+                  if (snapshot.exists()) {
+                      snapshot.forEach((child) => {
+                          players.push({
+                              username: child.key,
+                              regularPoints: child.val().regularPoints || 0
+                          });
+                      });
+                      
+                      // Sort by regular points in descending order
+                      players.sort((a, b) => b.regularPoints - a.regularPoints);
+                      // Take only top 20
+                      players = players.slice(0, 20);
+                  }
+      
+                  const form = document.querySelector('.form');
+                  form.innerHTML = `
+                      <div class="user-info-container">
+                          <h2>Top 20 Players</h2>
+                          <div style="margin-top: 20px; color: #8f94fb;">
+                              ${players.map((player, index) => `
+                                  <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(78, 84, 200, 0.1); margin: 5px 0; border-radius: 5px;">
+                                      <span>#${index + 1} ${player.username}</span>
+                                      <span>${player.regularPoints} Points</span>
+                                  </div>
+                              `).join('')}
+                          </div>
+                          <button class="sub" id="backBtn" style="margin-top: 20px;">Back to Main</button>
+                      </div>
+                  `;
+      
+                  // Add back button functionality
+                  document.getElementById('backBtn').addEventListener('click', async () => {
+                      const username = await getCurrentUsername();
+                      if (username) {
+                          showMainPage(username);
+                      }
+                  });
+              }
+      
+              function handleLogin(e) {
+                  e.preventDefault();
+                  
+                  const usernameInput = document.getElementById("username").value;
+                  const password = document.getElementById("password").value;
+      
+                  const userRef = ref(db, 'users/' + usernameInput);
+                  
+                  get(userRef).then((snapshot) => {
+                      if(snapshot.exists()) {
+                          const userData = snapshot.val();
+                          if(userData.password === password) {
+                              const loginLogRef = ref(db, 'loginLogs/' + usernameInput);
+                              set(loginLogRef, {
+                                  timestamp: Date.now(),
+                                  status: 'online'
+                              }).then(() => {
+                                  showMainPage(usernameInput); 
+                              }).catch((error) => {
+                                  alert("Error logging login: " + error.message);
+                              });
+                          } else {
+                              alert("Incorrect password!");
+                          }
+                      } else {
+                          alert("Username not found!");
+                      }
+                  }).catch((error) => {
+                      alert("Error during login: " + error.message);
+                  });
+              }
+      
+              function handleRegister(e) {
+                  e.preventDefault();
+                  
+                  const username = document.getElementById("newUsername").value;
+                  const password = document.getElementById("newPassword").value;
+      
+                  const userRef = ref(db, 'users/' + username);
+                  
+                  get(userRef).then((snapshot) => {
+                      if(snapshot.exists()) {
+                          alert("Username already exists!");
+                      } else {
+                          set(userRef, {
+                              username: username,
+                              password: password
+                          }).then(() => {
+                              alert("Registration successful! Please login.");
+                              showLoginForm();
+                          }).catch((error) => {
+                              alert("Error during registration: " + error.message);
+                          });
+                      }
+                  }).catch((error) => {
+                      alert("Error checking username: " + error.message);
+                  });
+              }
+      
+              document.addEventListener('DOMContentLoaded', function() {
+                  // Check for existing session first
+                  checkExistingSession();
+                  
+                  // Then add the usual event listeners
+                  const loginForm = document.getElementById("loginForm");
+                  const registerLink = document.getElementById("registerLink");
+                  
+                  if (loginForm) {
+                      loginForm.addEventListener('submit', handleLogin);
+                  }
+                  
+                  if (registerLink) {
+                      registerLink.addEventListener('click', showRegisterForm);
+                  }
+              });
+      
+              // Add event listener for page unload to handle unexpected closures
+              window.addEventListener('beforeunload', function(e) {
+                  // Cancel the event
+                  e.preventDefault();
+                  // Chrome requires returnValue to be set
+                  e.returnValue = '';
+              });
+          </script>
+</body>
+</html>
