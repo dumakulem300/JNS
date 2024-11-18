@@ -76,6 +76,12 @@
             overflow-y: auto; 
             scrollbar-width: none; 
             -ms-overflow-style: none; 
+            cursor: grab;  /* Show grab cursor by default */
+        }
+
+        .form.dragging {
+            cursor: grabbing;  /* Show grabbing cursor while dragging */
+            user-select: none;
         }
 
         .form::-webkit-scrollbar {
@@ -187,9 +193,6 @@
             padding: 15px;
             border-radius: 10px;
             margin: 10px 0;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            border: 2px solid #4e54c8;
         }
 
         .slots {
@@ -611,25 +614,122 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-        apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
-        authDomain: "jns-reward-points.firebaseapp.com",
-        databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "jns-reward-points",
-        storageBucket: "jns-reward-points.firebasestorage.app",
-        messagingSenderId: "856311133669",
-        appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
-        measurementId: "G-KD8HC3H0J1"
+            apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
+            authDomain: "jns-reward-points.firebaseapp.com",
+            databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "jns-reward-points",
+            storageBucket: "jns-reward-points.firebasestorage.app",
+            messagingSenderId: "856311133669",
+            appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
+            measurementId: "G-KD8HC3H0J1"
     };
 
         let regularPoints = 0;
         let starPoints = 0;
+        let currentLoggedInUser = null;
+        let timerInterval;
+        const totalDuration = 3600; // 60 minutes in seconds
+        let endTime;
+        let isPaused = false;
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+
+        function savePointsToDatabase() {
+            if (!currentLoggedInUser) return; // Guard against no user logged in
+            
+            const pointsRef = ref(db, 'userPoints/' + currentLoggedInUser);
+            set(pointsRef, {
+                regularPoints: regularPoints,
+                starPoints: starPoints,
+                lastUpdated: Date.now()
+            }).catch(error => {
+                console.error("Error saving points:", error);
+            });
+        }
+
+        async function saveTimerState(username, remainingTime, startTime, pauseTime) {
+            try {
+                await set(ref(db, 'timerState/' + username), {
+                    remainingTime,
+                    startTime, 
+                    pauseTime,
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                console.error("Error saving timer state:", error);
+            }
+        }
+
+        async function loadTimerState(username) {
+            try {
+                const snapshot = await get(ref(db, 'timerState/' + username));
+                return snapshot.exists() ? snapshot.val() : null;
+            } catch (error) {
+                console.error("Error loading timer state:", error);
+                return null;
+            }
+        }
+
+        function setupRealtimeUpdates(username) {
+            const userPointsRef = ref(db, 'userPoints/' + username);
+            
+            // Listen for changes in user points
+            onValue(userPointsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    regularPoints = data.regularPoints || 0;
+                    starPoints = data.starPoints || 0;
+                    updatePointsDisplay();
+                }
+            });
+
+            // Listen for bonus spins changes
+            const bonusSpinsRef = ref(db, 'bonusSpins/' + username);
+            onValue(bonusSpinsRef, (snapshot) => {
+                updateSpinsRemaining();
+            });
+
+            // Listen for timer state changes
+            const timerStateRef = ref(db, 'timerState/' + username);
+            onValue(timerStateRef, async (snapshot) => {
+                if (snapshot.exists()) {
+                    // Only update if not currently running a timer
+                    if (!timerInterval) {
+                        const state = await loadTimerState(username);
+                        if (state && state.remainingTime) {
+                            startTimer(username, state.remainingTime);
+                        }
+                    }
+                }
+            });
+        }
+
+        function clearPreviousSession() {
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear any existing intervals
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Reset global variables
+            regularPoints = 0;
+            starPoints = 0;
+            currentLoggedInUser = null;
+            endTime = null;
+            isPaused = false;
+            
+            // Clear any existing event listeners by removing and re-adding them
+            const existingForm = document.querySelector('.form');
+            const newForm = existingForm.cloneNode(true);
+            existingForm.parentNode.replaceChild(newForm, existingForm);
+        }
 
         function showLoginForm() {
             const form = document.querySelector('.form');
@@ -710,34 +810,8 @@
         }
 
         async function checkExistingSession() {
-            const loginLogsRef = ref(db, 'loginLogs');
-            const snapshot = await get(loginLogsRef);
-            
-            if (snapshot.exists()) {
-                const loginLogs = snapshot.val();
-                for (const username in loginLogs) {
-                    const log = loginLogs[username];
-                    if (log.status === 'online') {
-                        // Get user points
-                        const pointsRef = ref(db, 'userPoints/' + username);
-                        const pointsSnapshot = await get(pointsRef);
-                        
-                        if (pointsSnapshot.exists()) {
-                            const pointsData = pointsSnapshot.val();
-                            regularPoints = pointsData.regularPoints || 0;
-                            starPoints = pointsData.starPoints || 0;
-                        } else {
-                            // Initialize points if they don't exist
-                            regularPoints = 0;
-                            starPoints = 0;
-                        }
-                        
-                        // Show main page for logged in user
-                        showMainPage(username);
-                        return;
-                    }
-                }
-            }
+            clearPreviousSession();
+            showLoginForm();
         }
 
         async function canSpinSlotToday(username) {
@@ -810,7 +884,7 @@
         }
 
         async function updateSpinsRemaining() {
-            const username = await getCurrentUsername(); // You'll need to implement this
+            const username = await getCurrentUsername();
             if (!username) return;
 
             const canSpinSlot = await canSpinSlotToday(username);
@@ -833,18 +907,7 @@
         }
 
         async function getCurrentUsername() {
-            // Get username from active session in loginLogs
-            const loginLogsRef = ref(db, 'loginLogs');
-            const snapshot = await get(loginLogsRef);
-            if (snapshot.exists()) {
-                const loginLogs = snapshot.val();
-                for (const username in loginLogs) {
-                    if (loginLogs[username].status === 'online') {
-                        return username;
-                    }
-                }
-            }
-            return null;
+            return currentLoggedInUser;
         }
 
         async function updateTimerRewardStatus() {
@@ -897,8 +960,102 @@
             }
         }
 
+        // Move startTimer definition outside of showMainPage
+        function startTimer(username, initialTime) {
+            if (!document.getElementById('timerDisplay')) {
+                console.warn('Timer display not ready, retrying...');
+                setTimeout(() => startTimer(username, initialTime), 100);
+                return;
+            }
+
+            clearInterval(timerInterval);
+            const duration = initialTime || totalDuration;
+            endTime = Date.now() + (duration * 1000);
+
+            timerInterval = setInterval(async () => {
+                if (!isPaused) {
+                    const currentTime = Date.now();
+                    const timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+
+                    displayTimer(timeRemaining);
+                    updateProgress(timeRemaining);
+
+                    if (timeRemaining <= 0) {
+                        clearInterval(timerInterval);
+                        
+                        // Check if user can get reward today
+                        const canReward = await canGetTimerReward(username);
+                        if (canReward) {
+                            // Add reward
+                            regularPoints += 1;
+                            updatePointsDisplay();
+                            savePointsToDatabase();
+                            
+                            // Record the reward
+                            const timerRewardsRef = ref(db, 'timerRewards/' + username);
+                            await set(timerRewardsRef, {
+                                timestamp: Date.now(),
+                                lastReward: new Date().toISOString()
+                            });
+                            
+                            alert("Congratulations! You've earned 1 regular point from completing the timer!");
+                            triggerConfetti();
+                        } else {
+                            alert("Timer completed! You've already received your daily timer reward. Next reward available at 1 AM.");
+                        }
+                    }
+                }
+            }, 1000);
+        }
+
+        function displayTimer(seconds) {
+            const timerDisplay = document.getElementById('timerDisplay');
+            if (!timerDisplay) {
+                console.warn('Timer display element not found');
+                return;
+            }
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            const formattedTime = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            timerDisplay.textContent = formattedTime;
+        }
+
+        function updateProgress(timeRemaining) {
+            const progress = document.getElementById('progress');
+            if (!progress) {
+                console.warn('Progress bar element not found');
+                return;
+            }
+            const progressPercentage = (timeRemaining / totalDuration) * 100;
+            progress.style.transform = `scaleX(${progressPercentage / 100})`;
+        }
+
+        // Move triggerConfetti function outside showMainPage
+        function triggerConfetti() {
+            // Position confetti in center of screen
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { 
+                    x: centerX / window.innerWidth,
+                    y: centerY / window.innerHeight
+                },
+                colors: ['#4e54c8', '#8f94fb', '#ff69b4', '#800080'],
+                startVelocity: 30,
+                gravity: 0.5,
+                scalar: 0.7
+            });
+        }
+
         // Modify showMainPage to ensure points are updated only after DOM is ready
         function showMainPage(username) {
+            currentLoggedInUser = username; // Set current user
+            // Set up realtime listeners
+            setupRealtimeUpdates(username);
+            
             const pointsRef = ref(db, 'userPoints/' + username);
             get(pointsRef).then((snapshot) => {
                 if (snapshot.exists()) {
@@ -1005,121 +1162,23 @@
                 initializeTimer(); // Small delay to ensure DOM is ready
             }, 100);
 
-            // Timer functionality
-            let timerInterval;
-            const totalDuration = 3600; // 60 minutes in seconds
-            let endTime;
-            let isPaused = false;
-
-            async function saveTimerState(remainingTime, startTime, pauseTime) {
-                try {
-                    await set(ref(db, 'timerState/' + username), {
-                        remainingTime,
-                        startTime,
-                        pauseTime,
-                        timestamp: Date.now()
-                    });
-                } catch (error) {
-                    console.error("Error saving timer state:", error);
-                }
-            }
-
-            async function loadTimerState() {
-                try {
-                    const snapshot = await get(ref(db, 'timerState/' + username));
-                    return snapshot.exists() ? snapshot.val() : null;
-                } catch (error) {
-                    console.error("Error loading timer state:", error);
-                    return null;
-                }
-            }
-
-            function updateProgress(timeRemaining) {
-                const progress = document.getElementById('progress');
-                if (!progress) {
-                    console.warn('Progress bar element not found');
-                    return;
-                }
-                const progressPercentage = (timeRemaining / totalDuration) * 100;
-                progress.style.transform = `scaleX(${progressPercentage / 100})`;
-            }
-
-            function displayTimer(seconds) {
-                const timerDisplay = document.getElementById('timerDisplay');
-                if (!timerDisplay) {
-                    console.warn('Timer display element not found');
-                    return;
-                }
-                const minutes = Math.floor(seconds / 60);
-                const remainingSeconds = seconds % 60;
-                const formattedTime = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-                timerDisplay.textContent = formattedTime;
-            }
-
-            function startTimer(initialTime) {
-                if (!document.getElementById('timerDisplay')) {
-                    console.warn('Timer display not ready, retrying...');
-                    setTimeout(() => startTimer(initialTime), 100);
-                    return;
-                }
-
-                clearInterval(timerInterval);
-                const duration = initialTime || totalDuration;
-                endTime = Date.now() + (duration * 1000);
-
-                timerInterval = setInterval(async () => {
-                    if (!isPaused) {
-                        const currentTime = Date.now();
-                        const timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
-
-                        displayTimer(timeRemaining);
-                        updateProgress(timeRemaining);
-
-                        if (timeRemaining <= 0) {
-                            clearInterval(timerInterval);
-                            
-                            // Check if user can get reward today
-                            const canReward = await canGetTimerReward(username);
-                            if (canReward) {
-                                // Add reward
-                                regularPoints += 1;
-                                updatePointsDisplay();
-                                savePointsToDatabase();
-                                
-                                // Record the reward
-                                const timerRewardsRef = ref(db, 'timerRewards/' + username);
-                                await set(timerRewardsRef, {
-                                    timestamp: Date.now(),
-                                    lastReward: new Date().toISOString()
-                                });
-                                
-                                alert("Congratulations! You've earned 1 regular point from completing the timer!");
-                                triggerConfetti();
-                            } else {
-                                alert("Timer completed! You've already received your daily timer reward. Next reward available at 1 AM.");
-                            }
-                        }
-                    }
-                }, 1000);
-            }
-
             async function initializeTimer() {
-                const savedState = await loadTimerState();
+                const savedState = await loadTimerState(username);
                 if (savedState) {
                     const { remainingTime, startTime, pauseTime } = savedState;
                     
                     if (startTime && pauseTime) {
                         const elapsed = pauseTime - startTime;
                         const actualRemaining = Math.max(0, remainingTime - Math.floor(elapsed / 1000));
-                        startTimer(actualRemaining);
+                        startTimer(username, actualRemaining);
                     } else if (remainingTime) {
-                        startTimer(remainingTime);
+                        startTimer(username, remainingTime);
                     }
                 } else {
-                    startTimer(totalDuration);
+                    startTimer(username, totalDuration);
                 }
                 
-                await saveTimerState(totalDuration, Date.now(), null);
+                await saveTimerState(username, totalDuration, Date.now(), null);
                 await updateTimerRewardStatus(); // Add this line
             }
 
@@ -1135,15 +1194,17 @@
                         const timeRemaining = Math.floor((endTime - currentTime) / 1000);
                         
                         await saveTimerState(
+                            username,
                             timeRemaining,
                             null, // Clear start time
                             Date.now() // Set pause time
                         );
                     } else {
-                        const savedState = await loadTimerState();
+                        const savedState = await loadTimerState(username);
                         if (savedState && savedState.remainingTime) {
-                            startTimer(savedState.remainingTime);
+                            startTimer(username, savedState.remainingTime);
                             await saveTimerState(
+                                username,
                                 savedState.remainingTime,
                                 Date.now(), // New start time
                                 null // Clear pause time
@@ -1188,14 +1249,19 @@
             }
 
             function savePointsToDatabase() {
-                const pointsRef = ref(db, 'userPoints/' + username);
+                if (!currentLoggedInUser) return; // Guard against no user logged in
+                
+                const pointsRef = ref(db, 'userPoints/' + currentLoggedInUser);
                 set(pointsRef, {
                     regularPoints: regularPoints,
                     starPoints: starPoints,
                     lastUpdated: Date.now()
+                }).catch(error => {
+                    console.error("Error saving points:", error);
                 });
             }
 
+            // Move triggerConfetti function outside showMainPage
             function triggerConfetti() {
                 // Position confetti in center of screen
                 const centerX = window.innerWidth / 2;
@@ -1216,15 +1282,8 @@
             }
 
             document.getElementById("logoutBtn").addEventListener('click', () => {
-                const loginLogRef = ref(db, 'loginLogs/' + username);
-                set(loginLogRef, null)
-                    .then(() => {
-                        showLoginForm();
-                    })
-                    .catch((error) => {
-                        alert("Error during logout: " + error.message);
-                        showLoginForm();
-                    });
+                currentLoggedInUser = null; // Clear current user
+                showLoginForm();
             });
 
             const letters = ['J', 'N', 'S'];
@@ -1457,7 +1516,7 @@
                                 `You won ${winningNumber} star points!`;
                             
                             // Show alert
-                            alert(isJackpotWin ? `JACKPOT!! You win 50 regular points!` : `Congratz!! You win ${winningNumber} Star points!`);
+                            alert(isJackpotWin ? `JACKPOT!! You win 2 regular points!` : `Congratz!! You win ${winningNumber} Star points!`);
                             
                             // Update result text if element exists
                             const resultElement = document.querySelector('#rouletteResult');
@@ -1599,6 +1658,61 @@
             updateSpinsRemaining();
             // Update the display every minute
             setInterval(updateSpinsRemaining, 60000);
+
+            // Add drag scrolling functionality
+            let isDragging = false;
+            let startY = 0;
+            let scrollTop = 0;
+
+            // No need to query for form again since it's already defined
+            function handleDragStart(e) {
+                // Ignore if target is an input, button, or other interactive element
+                if (
+                    e.target.tagName === 'INPUT' ||
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.closest('.slot-machine') ||
+                    e.target.closest('.roulette-wheel') ||
+                    e.target.closest('.timer-container') ||
+                    e.target.closest('.conversion-box') ||
+                    e.target.closest('.donation-box')
+                ) {
+                    return;
+                }
+
+                isDragging = true;
+                form.classList.add('dragging');
+                startY = e.pageY - form.offsetTop;
+                scrollTop = form.scrollTop;
+                
+                // Prevent text selection while dragging
+                e.preventDefault();
+            }
+
+            function handleDragEnd() {
+                isDragging = false;
+                form.classList.remove('dragging');
+            }
+
+            function handleDragMove(e) {
+                if (!isDragging) return;
+                
+                const y = e.pageY - form.offsetTop;
+                const walk = (y - startY) * 2; // Multiply by 2 for faster scrolling
+                form.scrollTop = scrollTop - walk;
+            }
+
+            // Add event listeners for drag scrolling
+            form.addEventListener('mousedown', handleDragStart);
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('mouseleave', handleDragEnd);
+
+            // Prevent text selection during drag
+            form.addEventListener('selectstart', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                }
+            });
         }
 
         async function showTop20Page() {
@@ -1648,6 +1762,9 @@
         function handleLogin(e) {
             e.preventDefault();
             
+            // Clear any previous session data first
+            clearPreviousSession();
+            
             const usernameInput = document.getElementById("username").value;
             const password = document.getElementById("password").value;
 
@@ -1657,15 +1774,8 @@
                 if(snapshot.exists()) {
                     const userData = snapshot.val();
                     if(userData.password === password) {
-                        const loginLogRef = ref(db, 'loginLogs/' + usernameInput);
-                        set(loginLogRef, {
-                            timestamp: Date.now(),
-                            status: 'online'
-                        }).then(() => {
-                            showMainPage(usernameInput); 
-                        }).catch((error) => {
-                            alert("Error logging login: " + error.message);
-                        });
+                        currentLoggedInUser = usernameInput; // Set current user
+                        showMainPage(usernameInput);
                     } else {
                         alert("Incorrect password!");
                     }
