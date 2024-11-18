@@ -1,0 +1,1157 @@
+<html><head><base href="/" />
+    <title>JNS Internet Shop Reward System - Login</title>
+    <meta charset="UTF-12">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    
+  </head>
+    <body>
+            <div class="box">
+                <div class="form">
+                    <div class="logo">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                            <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                        </svg>
+                    </div>
+                    <h2>JNS Internet Shop Reward Portal</h2>
+                    <form id="loginForm">
+                        <div class="inputbox">
+                            <input type="text" id="username" required>
+                            <span>Username</span>
+                        </div>
+                        <div class="inputbox">
+                            <input type="password" id="password" required>
+                            <span>Password</span>           
+                        </div>
+                        <button type="submit" class="sub">Login</button>
+                        <div class="login-link">
+                            Need an account? <a href="#" id="registerLink">Register</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        
+            <script type="module">
+                import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+                import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+        
+               // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+              const firebaseConfig = {
+              apiKey: "AIzaSyD2HNdwfHLo1nMb4wm4z83uR4TEjUiM6_g",
+              authDomain: "jns-reward-points.firebaseapp.com",
+              databaseURL: "https://jns-reward-points-default-rtdb.asia-southeast1.firebasedatabase.app",
+              projectId: "jns-reward-points",
+              storageBucket: "jns-reward-points.firebasestorage.app",
+              messagingSenderId: "856311133669",
+              appId: "1:856311133669:web:ff09d06d3a8a83ec9bab0c",
+              measurementId: "G-KD8HC3H0J1"
+              };
+        
+                let regularPoints = 0;
+                let starPoints = 0;
+        
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app);
+        
+                function showLoginForm() {
+                    const form = document.querySelector('.form');
+                    form.innerHTML = `
+                        <div class="logo">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                                <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                            </svg>
+                        </div>
+                        <h2>JNS Internet Shop Reward Portal</h2>
+                        <form id="loginForm">
+                            <div class="inputbox">
+                                <input type="text" id="username" required>
+                                <span>Username</span>
+                            </div>
+                            <div class="inputbox">
+                                <input type="password" id="password" required>
+                                <span>Password</span>           
+                            </div>
+                            <button type="submit" class="sub">Login</button>
+                            <div class="login-link">
+                                Need an account? <a href="#" id="registerLink">Register</a>
+                            </div>
+                        </form>
+                    `;
+        
+                    // Re-add event listeners for the new form
+                    const loginForm = document.getElementById("loginForm");
+                    const registerLink = document.getElementById("registerLink");
+                    
+                    if (loginForm) {
+                        loginForm.addEventListener('submit', handleLogin);
+                    }
+                    
+                    if (registerLink) {
+                        registerLink.addEventListener('click', showRegisterForm);
+                    }
+                }
+        
+                function showRegisterForm() {
+                    const form = document.querySelector('.form');
+                    form.innerHTML = `
+                        <div class="logo">
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="#4e54c8" stroke-width="2"/>
+                                <text x="50" y="60" text-anchor="middle" fill="#4e54c8" font-size="24" font-weight="bold">JNS</text>
+                            </svg>
+                        </div>
+                        <h2>Register New Account</h2>
+                        <form id="registerForm">
+                            <div class="inputbox">
+                                <input type="text" id="newUsername" required>
+                                <span>Username</span>
+                            </div>
+                            <div class="inputbox">
+                                <input type="password" id="newPassword" required>
+                                <span>Password</span>           
+                            </div>
+                            <button type="submit" class="sub">Register</button>
+                            <div class="login-link">
+                                Already have an account? <a href="#" id="loginLink">Login</a>
+                            </div>
+                        </form>
+                    `;
+        
+                    // Add event listeners for the register form
+                    const registerForm = document.getElementById("registerForm");
+                    const loginLink = document.getElementById("loginLink");
+                    
+                    if (registerForm) {
+                        registerForm.addEventListener('submit', handleRegister);
+                    }
+                    
+                    if (loginLink) {
+                        loginLink.addEventListener('click', showLoginForm);
+                    }
+                }
+        
+                async function checkExistingSession() {
+                    const loginLogsRef = ref(db, 'loginLogs');
+                    const snapshot = await get(loginLogsRef);
+                    
+                    if (snapshot.exists()) {
+                        const loginLogs = snapshot.val();
+                        for (const username in loginLogs) {
+                            const log = loginLogs[username];
+                            if (log.status === 'online') {
+                                // Get user points
+                                const pointsRef = ref(db, 'userPoints/' + username);
+                                const pointsSnapshot = await get(pointsRef);
+                                
+                                if (pointsSnapshot.exists()) {
+                                    const pointsData = pointsSnapshot.val();
+                                    regularPoints = pointsData.regularPoints || 0;
+                                    starPoints = pointsData.starPoints || 0;
+                                } else {
+                                    // Initialize points if they don't exist
+                                    regularPoints = 0;
+                                    starPoints = 0;
+                                }
+                                
+                                // Show main page for logged in user
+                                showMainPage(username);
+                                return;
+                            }
+                        }
+                    }
+                }
+        
+                async function canSpinSlotToday(username) {
+                    // First check for bonus spins
+                    const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                    const bonusSnapshot = await get(bonusSpinRef);
+                    
+                    if (bonusSnapshot.exists() && bonusSnapshot.val().spinsRemaining > 0) {
+                        return true;
+                    }
+                    
+                    // If no bonus spins, check regular daily spin
+                    const spinsRef = ref(db, 'slotSpins/' + username);
+                    const snapshot = await get(spinsRef);
+                    
+                    if (!snapshot.exists()) {
+                        return true;
+                    }
+        
+                    const lastSpin = new Date(snapshot.val().lastSpin);
+                    const now = new Date();
+                    const resetTime = new Date();
+                    resetTime.setHours(1, 0, 0, 0);
+        
+                    if (now < resetTime) {
+                        resetTime.setDate(resetTime.getDate() - 1);
+                    }
+        
+                    return lastSpin < resetTime;
+                }
+        
+                async function canSpinRouletteToday(username) {
+                    const spinsRef = ref(db, 'rouletteSpins/' + username);
+                    const snapshot = await get(spinsRef);
+                    
+                    if (!snapshot.exists()) {
+                        return true;
+                    }
+        
+                    const lastSpin = new Date(snapshot.val().lastSpin);
+                    const now = new Date();
+                    const resetTime = new Date();
+                    resetTime.setHours(1, 0, 0, 0);
+        
+                    if (now < resetTime) {
+                        resetTime.setDate(resetTime.getDate() - 1);
+                    }
+        
+                    return lastSpin < resetTime;
+                }
+        
+                async function canGetTimerReward(username) {
+                    const rewardsRef = ref(db, 'timerRewards/' + username);
+                    const snapshot = await get(rewardsRef);
+                    
+                    if (!snapshot.exists()) {
+                        return true;
+                    }
+        
+                    const lastReward = new Date(snapshot.val().lastReward);
+                    const now = new Date();
+                    const resetTime = new Date();
+                    resetTime.setHours(1, 0, 0, 0);
+        
+                    if (now < resetTime) {
+                        resetTime.setDate(resetTime.getDate() - 1);
+                    }
+        
+                    return lastReward < resetTime;
+                }
+        
+                async function updateSpinsRemaining() {
+                    const username = await getCurrentUsername(); // You'll need to implement this
+                    if (!username) return;
+        
+                    const canSpinSlot = await canSpinSlotToday(username);
+                    const canSpinRoulette = await canSpinRouletteToday(username);
+                    
+                    const slotSpinsElement = document.getElementById('spinsRemaining');
+                    const rouletteSpinsElement = document.getElementById('rouletteSpinsRemaining');
+                    
+                    if (slotSpinsElement) {
+                        slotSpinsElement.textContent = canSpinSlot ? 
+                            "You have 1 spin remaining today" : 
+                            "No spins remaining today. Resets at 1 AM";
+                    }
+                    
+                    if (rouletteSpinsElement) {
+                        rouletteSpinsElement.textContent = canSpinRoulette ? 
+                            "You have 1 spin remaining today" : 
+                            "No spins remaining today. Resets at 1 AM";
+                    }
+                }
+        
+                async function getCurrentUsername() {
+                    // Get username from active session in loginLogs
+                    const loginLogsRef = ref(db, 'loginLogs');
+                    const snapshot = await get(loginLogsRef);
+                    if (snapshot.exists()) {
+                        const loginLogs = snapshot.val();
+                        for (const username in loginLogs) {
+                            if (loginLogs[username].status === 'online') {
+                                return username;
+                            }
+                        }
+                    }
+                    return null;
+                }
+        
+                async function updateTimerRewardStatus() {
+                    const username = await getCurrentUsername();
+                    if (!username) return;
+                    
+                    const canReward = await canGetTimerReward(username);
+                    const timerDisplay = document.getElementById('timerDisplay');
+                    
+                    if (timerDisplay) {
+                        timerDisplay.setAttribute('data-reward-available', canReward);
+                    }
+                }
+        
+                const isPointsDisplayReady = () => {
+                    return document.getElementById('regularPoints') && 
+                           document.getElementById('starPoints');
+                };
+        
+                function updatePointsDisplay() {
+                    const regularPointsElement = document.getElementById('regularPoints');
+                    const starPointsElement = document.getElementById('starPoints');
+                    const availableStarPoints = document.getElementById('availableStarPoints');
+                    const convertBtn = document.getElementById('convertBtn');
+        
+                    // Only update if elements exist
+                    if (regularPointsElement) {
+                        regularPointsElement.textContent = regularPoints;
+                    }
+                    
+                    if (starPointsElement) {
+                        starPointsElement.textContent = starPoints;
+                    }
+                    
+                    // Update conversion box if elements exist
+                    if (availableStarPoints) {
+                        availableStarPoints.textContent = starPoints;
+                    }
+                    if (convertBtn) {
+                        convertBtn.disabled = starPoints < 200;
+                    }
+                    
+                    updateDonationStatus(); // Update donation button status
+                }
+        
+                function updateDonationStatus() {
+                    const donateBtn = document.getElementById('donateBtn');
+                    if (donateBtn) {
+                        donateBtn.disabled = starPoints < 50;
+                    }
+                }
+        
+                // Modify showMainPage to ensure points are updated only after DOM is ready
+                function showMainPage(username) {
+                    const pointsRef = ref(db, 'userPoints/' + username);
+                    get(pointsRef).then((snapshot) => {
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            regularPoints = data.regularPoints || 0;
+                            starPoints = data.starPoints || 0;
+                            
+                            // Wait for DOM elements before updating display
+                            const checkElements = setInterval(() => {
+                                if (isPointsDisplayReady()) {
+                                    clearInterval(checkElements);
+                                    updatePointsDisplay();
+                                }
+                            }, 100);
+                        }
+                    });
+        
+                    const form = document.querySelector('.form');
+                    const mainPageHTML = `
+                        <div class="user-info-container">
+                            <h2>Welcome, ${username}!</h2>
+                            <div class="points-container">
+                                <div class="points-display">
+                                    Regular Points
+                                    <span id="regularPoints">${regularPoints}</span>
+                                </div>
+                                <div class="points-display">
+                                    Star Points
+                                    <span id="starPoints">${starPoints}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Rest of the existing HTML content remains the same -->
+                        <div class="timer-container" style="margin: 15px 0;">
+                            <div id="timerDisplay" class="timer-display">60:00</div>
+                            <div class="progress-bar">
+                                <div id="progress" class="progress"></div>
+                            </div>
+                            <div class="button-container">
+                                <button id="pauseButton" class="sub">Pause</button>
+                            </div>
+                        </div>
+                        <div class="slot-machine">
+                            <h3 style="color: #8f94fb;">Slot Machine</h3>
+                            <div class="spins-remaining" id="spinsRemaining">Checking spins remaining...</div>
+                            <div class="slots">
+                                <div class="slot" id="slot1">-</div>
+                                <div class="slot" id="slot2">-</div>
+                                <div class="slot" id="slot3">-</div>
+                            </div>
+                            <button class="spin-btn" id="spinBtn">Spin</button>
+                            <div class="result" id="result"></div>
+                            <div class="points" id="points">Star Points: 0</div>
+                        </div>
+                        <div class="roulette-wheel">
+                            <h3 style="color: #8f94fb;">Roulette Wheel</h3>
+                            <div class="spins-remaining" id="rouletteSpinsRemaining">Checking spins remaining...</div>
+                            <div class="wheel-container">
+                                <div class="wheel" id="wheel">
+                                    <svg viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="45" fill="#263238" />
+                                        <circle cx="50" cy="50" r="42" fill="#37474F" />
+                                        <g id="numbers"></g>
+                                    </svg>
+                                </div>
+                                <div class="center-dome"></div>
+                                <div class="pointer"></div>
+                            </div>
+                            <button class="sub" id="spinRouletteBtn">Spin Roulette</button>
+                            <div class="result" id="rouletteResult"></div>
+                        </div>
+                        
+                        <!-- Donation Box -->
+                        <div class="donation-box">
+                            <h3 style="color: #8f94fb;">Donate Star Points</h3>
+                            <div class="donation-info">
+                                <p>Donate 25 star points to another user</p>
+                                <p>Donation fee: 25 star points</p>
+                                <p>Total cost: 50 star points</p>
+                            </div>
+                            <div class="inputbox" style="margin-top: 10px;">
+                                <input type="text" id="donateUsername" required>
+                                <span>Recipient Username</span>
+                            </div>
+                            <button class="sub" id="donateBtn" ${starPoints < 50 ? 'disabled' : ''}>Donate Star Points</button>
+                        </div>
+        
+                        <!-- Moved Convert Star Points box here -->
+                        <div class="conversion-box">
+                            <h3 style="color: #8f94fb;">Convert Star Points</h3>
+                            <div class="conversion-info">
+                                <p>200 Star Points = 15 Regular Points</p>
+                                <p>Your available star points: <span id="availableStarPoints">${starPoints}</span></p>
+                            </div>
+                            <button class="sub" id="convertBtn" ${starPoints < 200 ? 'disabled' : ''}>Convert Points</button>
+                        </div>
+                        <button class="sub" id="logoutBtn">Logout</button>
+                        <button class="sub" id="top20Btn" style="margin-top: 10px;">Top 20 Players</button>
+                    `;
+                    form.innerHTML = mainPageHTML;
+        
+                    // Initialize timer after the main page elements are added to DOM
+                    setTimeout(() => {
+                        initializeTimer(); // Small delay to ensure DOM is ready
+                    }, 100);
+        
+                    // Timer functionality
+                    let timerInterval;
+                    const totalDuration = 3600; // 60 minutes in seconds
+                    let endTime;
+                    let isPaused = false;
+        
+                    async function saveTimerState(remainingTime, startTime, pauseTime) {
+                        try {
+                            await set(ref(db, 'timerState/' + username), {
+                                remainingTime,
+                                startTime,
+                                pauseTime,
+                                timestamp: Date.now()
+                            });
+                        } catch (error) {
+                            console.error("Error saving timer state:", error);
+                        }
+                    }
+        
+                    async function loadTimerState() {
+                        try {
+                            const snapshot = await get(ref(db, 'timerState/' + username));
+                            return snapshot.exists() ? snapshot.val() : null;
+                        } catch (error) {
+                            console.error("Error loading timer state:", error);
+                            return null;
+                        }
+                    }
+        
+                    function updateProgress(timeRemaining) {
+                        const progress = document.getElementById('progress');
+                        if (!progress) {
+                            console.warn('Progress bar element not found');
+                            return;
+                        }
+                        const progressPercentage = (timeRemaining / totalDuration) * 100;
+                        progress.style.transform = `scaleX(${progressPercentage / 100})`;
+                    }
+        
+                    function displayTimer(seconds) {
+                        const timerDisplay = document.getElementById('timerDisplay');
+                        if (!timerDisplay) {
+                            console.warn('Timer display element not found');
+                            return;
+                        }
+                        const minutes = Math.floor(seconds / 60);
+                        const remainingSeconds = seconds % 60;
+                        const formattedTime = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+                        timerDisplay.textContent = formattedTime;
+                    }
+        
+                    function startTimer(initialTime) {
+                        if (!document.getElementById('timerDisplay')) {
+                            console.warn('Timer display not ready, retrying...');
+                            setTimeout(() => startTimer(initialTime), 100);
+                            return;
+                        }
+        
+                        clearInterval(timerInterval);
+                        const duration = initialTime || totalDuration;
+                        endTime = Date.now() + (duration * 1000);
+        
+                        timerInterval = setInterval(async () => {
+                            if (!isPaused) {
+                                const currentTime = Date.now();
+                                const timeRemaining = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+        
+                                displayTimer(timeRemaining);
+                                updateProgress(timeRemaining);
+        
+                                if (timeRemaining <= 0) {
+                                    clearInterval(timerInterval);
+                                    
+                                    // Check if user can get reward today
+                                    const canReward = await canGetTimerReward(username);
+                                    if (canReward) {
+                                        // Add reward
+                                        regularPoints += 1;
+                                        updatePointsDisplay();
+                                        savePointsToDatabase();
+                                        
+                                        // Record the reward
+                                        const timerRewardsRef = ref(db, 'timerRewards/' + username);
+                                        await set(timerRewardsRef, {
+                                            timestamp: Date.now(),
+                                            lastReward: new Date().toISOString()
+                                        });
+                                        
+                                        alert("Congratulations! You've earned 1 regular point from completing the timer!");
+                                        triggerConfetti();
+                                    } else {
+                                        alert("Timer completed! You've already received your daily timer reward. Next reward available at 1 AM.");
+                                    }
+                                }
+                            }
+                        }, 1000);
+                    }
+        
+                    async function initializeTimer() {
+                        const savedState = await loadTimerState();
+                        if (savedState) {
+                            const { remainingTime, startTime, pauseTime } = savedState;
+                            
+                            if (startTime && pauseTime) {
+                                const elapsed = pauseTime - startTime;
+                                const actualRemaining = Math.max(0, remainingTime - Math.floor(elapsed / 1000));
+                                startTimer(actualRemaining);
+                            } else if (remainingTime) {
+                                startTimer(remainingTime);
+                            }
+                        } else {
+                            startTimer(totalDuration);
+                        }
+                        
+                        await saveTimerState(totalDuration, Date.now(), null);
+                        await updateTimerRewardStatus(); // Add this line
+                    }
+        
+                    // Update pause button functionality
+                    const pauseButton = document.getElementById('pauseButton');
+                    if (pauseButton) {
+                        pauseButton.addEventListener('click', async () => {
+                            isPaused = !isPaused;
+                            pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+                            
+                            if (isPaused) {
+                                const currentTime = Date.now();
+                                const timeRemaining = Math.floor((endTime - currentTime) / 1000);
+                                
+                                await saveTimerState(
+                                    timeRemaining,
+                                    null, // Clear start time
+                                    Date.now() // Set pause time
+                                );
+                            } else {
+                                const savedState = await loadTimerState();
+                                if (savedState && savedState.remainingTime) {
+                                    startTimer(savedState.remainingTime);
+                                    await saveTimerState(
+                                        savedState.remainingTime,
+                                        Date.now(), // New start time
+                                        null // Clear pause time
+                                    );
+                                }
+                            }
+                        });
+                    }
+        
+                    // Update points display
+                    function updatePointsDisplay() {
+                        const regularPointsElement = document.getElementById('regularPoints');
+                        const starPointsElement = document.getElementById('starPoints');
+                        const availableStarPoints = document.getElementById('availableStarPoints');
+                        const convertBtn = document.getElementById('convertBtn');
+        
+                        // Only update if elements exist
+                        if (regularPointsElement) {
+                            regularPointsElement.textContent = regularPoints;
+                        }
+                        
+                        if (starPointsElement) {
+                            starPointsElement.textContent = starPoints;
+                        }
+                        
+                        // Update conversion box if elements exist
+                        if (availableStarPoints) {
+                            availableStarPoints.textContent = starPoints;
+                        }
+                        if (convertBtn) {
+                            convertBtn.disabled = starPoints < 200;
+                        }
+                        
+                        updateDonationStatus(); // Update donation button status
+                    }
+        
+                    function updateDonationStatus() {
+                        const donateBtn = document.getElementById('donateBtn');
+                        if (donateBtn) {
+                            donateBtn.disabled = starPoints < 50;
+                        }
+                    }
+        
+                    function savePointsToDatabase() {
+                        const pointsRef = ref(db, 'userPoints/' + username);
+                        set(pointsRef, {
+                            regularPoints: regularPoints,
+                            starPoints: starPoints,
+                            lastUpdated: Date.now()
+                        });
+                    }
+        
+                    function triggerConfetti() {
+                        // Position confetti in center of screen
+                        const centerX = window.innerWidth / 2;
+                        const centerY = window.innerHeight / 2;
+                        
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { 
+                                x: centerX / window.innerWidth,
+                                y: centerY / window.innerHeight
+                            },
+                            colors: ['#4e54c8', '#8f94fb', '#ff69b4', '#800080'],
+                            startVelocity: 30,
+                            gravity: 0.5,
+                            scalar: 0.7
+                        });
+                    }
+        
+                    document.getElementById("logoutBtn").addEventListener('click', () => {
+                        const loginLogRef = ref(db, 'loginLogs/' + username);
+                        set(loginLogRef, null)
+                            .then(() => {
+                                showLoginForm();
+                            })
+                            .catch((error) => {
+                                alert("Error during logout: " + error.message);
+                                showLoginForm();
+                            });
+                    });
+        
+                    const letters = ['J', 'N', 'S'];
+                    const slots = Array.from(document.querySelectorAll('.slot'));
+                    const spinBtn = document.getElementById('spinBtn');
+        
+                    if (spinBtn && slots.length === 3) {
+                        spinBtn.addEventListener('click', async () => {
+                            // Generate results first
+                            const results = [];
+                            for (let i = 0; i < 3; i++) {
+                                results.push(letters[Math.floor(Math.random() * letters.length)]);
+                            }
+        
+                            // Check for bonus spins first
+                            const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                            const bonusSnapshot = await get(bonusSpinRef);
+                            let usingBonusSpin = false;
+                            
+                            if (bonusSnapshot.exists() && bonusSnapshot.val().spinsRemaining > 0) {
+                                usingBonusSpin = true;
+                                // Decrement bonus spin
+                                await set(bonusSpinRef, {
+                                    timestamp: Date.now(),
+                                    spinsRemaining: bonusSnapshot.val().spinsRemaining - 1
+                                });
+                            } else {
+                                const canSpin = await canSpinSlotToday(username);
+                                if (!canSpin) {
+                                    const now = new Date();
+                                    const nextReset = new Date();
+                                    nextReset.setHours(1, 0, 0, 0);
+                                    if (now.getHours() >= 1) {
+                                        nextReset.setDate(nextReset.getDate() + 1);
+                                    }
+                                    
+                                    const timeUntilReset = nextReset - now;
+                                    const hoursUntilReset = Math.floor(timeUntilReset / (1000 * 60 * 60));
+                                    const minutesUntilReset = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+                                    
+                                    alert(`You've already used your daily spin! Next spin available at 1 AM (in ${hoursUntilReset}h ${minutesUntilReset}m)`);
+                                    return;
+                                }
+                            }
+        
+                            // If not using bonus spin, record the regular daily spin
+                            if (!usingBonusSpin) {
+                                const slotSpinsRef = ref(db, 'slotSpins/' + username);
+                                await set(slotSpinsRef, {
+                                    timestamp: Date.now(),
+                                    lastSpin: new Date().toISOString()
+                                });
+                            }
+                            
+                            slots.forEach(slot => slot.classList.add('spinning'));
+                            
+                            let counter = 0;
+                            const animationInterval = setInterval(() => {
+                                slots.forEach(slot => {
+                                    slot.textContent = letters[Math.floor(Math.random() * letters.length)];
+                                });
+                                counter++;
+                                
+                                if (counter >= 20) {
+                                    clearInterval(animationInterval);
+                                    slots.forEach(slot => slot.classList.remove('spinning'));
+                                    
+                                    slots.forEach((slot, index) => {
+                                        slot.textContent = results[index];
+                                    });
+                                    
+                                    let prize = 0;
+                                    const resultString = results.join('');
+                                    
+                                    if(resultString === 'JNS') {
+                                        prize = 20; 
+                                        regularPoints += 1; // Add regular points for jackpot
+                                        starPoints += prize;
+                                        document.getElementById('result').textContent = '🎉 JACKPOT! You won 20 star points! 🎉';
+                                    } else {
+                                        prize = Math.floor(Math.random() * 10) + 10;
+                                        regularPoints += 0; // Add regular points for normal win
+                                        starPoints += prize;
+                                        document.getElementById('result').textContent = `🌟 You won ${prize} star points! 🌟`;
+                                    }
+                                    
+                                    updatePointsDisplay();
+                                    savePointsToDatabase();
+                                    
+                                    const pointsDisplay = document.getElementById('points');
+                                    if (pointsDisplay) {
+                                        pointsDisplay.textContent = `⭐ Star Points: ${starPoints}`;
+                                    }
+        
+                                    // Add this line to trigger confetti
+                                    triggerConfetti();
+        
+                                    spinBtn.disabled = false;
+                                }
+                            }, 50);
+                        });
+                    }
+        
+                    // Roulette Wheel Functionality
+                    const wheel = document.getElementById('wheel');
+                    const spinRouletteBtn = document.getElementById('spinRouletteBtn');
+                    let isSpinning = false;
+        
+                    function initializeRouletteWheel() {
+                        const numbers = Array.from({ length: 38 }, (_, i) => Math.floor(Math.random() * 11) + 10);
+                        const jackpotIndex = Math.floor(Math.random() * 38);
+                        const colors = ['#e63946', '#333'];
+                        const totalNumbers = numbers.length;
+                        const anglePerSector = 360 / totalNumbers;
+                        let sectors = [];
+        
+                        const numberGroup = wheel.querySelector('#numbers');
+        
+                        numbers.forEach((number, index) => {
+                            const angle = index * anglePerSector;
+                            let color = index === jackpotIndex ? '#4CAF50' : colors[index % 2];
+        
+                            const startAngle = (angle - anglePerSector / 2) * Math.PI / 180;
+                            const endAngle = (angle + anglePerSector / 2) * Math.PI / 180;
+                            const x1 = 50 + 40 * Math.cos(startAngle);
+                            const y1 = 50 + 40 * Math.sin(startAngle);
+                            const x2 = 50 + 40 * Math.cos(endAngle);
+                            const y2 = 50 + 40 * Math.sin(endAngle);
+        
+                            const sector = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            sector.setAttribute("d", `M50,50 L${x1},${y1} A40,40 0 0,1 ${x2},${y2} Z`);
+                            sector.setAttribute("fill", color);
+                            sector.addEventListener('mouseover', () => {
+                                sector.classList.add('sector-highlight');
+                            });
+                            sector.addEventListener('mouseout', () => {
+                                sector.classList.remove('sector-highlight');
+                            });
+                            numberGroup.appendChild(sector);
+                            sectors.push({ sector, number, isJackpot: index === jackpotIndex });
+        
+                            const textAngle = angle * Math.PI / 180;
+                            const textX = 50 + 35 * Math.cos(textAngle);
+                            const textY = 50 + 35 * Math.sin(textAngle);
+                            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                            text.setAttribute("x", textX);
+                            text.setAttribute("y", textY);
+                            text.setAttribute("fill", "white");
+                            text.setAttribute("font-size", index === jackpotIndex ? "5" : "4");
+                            text.setAttribute("text-anchor", "middle");
+                            text.setAttribute("dominant-baseline", "middle");
+                            text.textContent = index === jackpotIndex ? "JP" : number;
+                            numberGroup.appendChild(text);
+                        });
+        
+                        return { numbers, sectors, jackpotIndex, totalNumbers, anglePerSector };
+                    }
+        
+                    const rouletteData = initializeRouletteWheel();
+        
+                    if (spinRouletteBtn) {
+                        spinRouletteBtn.addEventListener('click', async () => {
+                            const canSpin = await canSpinRouletteToday(username);
+                            
+                            if (!canSpin) {
+                                const now = new Date();
+                                const nextReset = new Date();
+                                nextReset.setHours(1, 0, 0, 0);
+                                if (now.getHours() >= 1) {
+                                    nextReset.setDate(nextReset.getDate() + 1);
+                                }
+                                
+                                const timeUntilReset = nextReset - now;
+                                const hoursUntilReset = Math.floor(timeUntilReset / (1000 * 60 * 60));
+                                const minutesUntilReset = Math.floor((timeUntilReset % (1000 * 60 * 60)) / (1000 * 60));
+                                
+                                alert(`You've already used your daily roulette spin! Next spin available at 1 AM (in ${hoursUntilReset}h ${minutesUntilReset}m)`);
+                                return;
+                            }
+                            if (isSpinning) return;
+                            isSpinning = true;
+        
+                            // Record the spin
+                            const rouletteSpinsRef = ref(db, 'rouletteSpins/' + username);
+                            await set(rouletteSpinsRef, {
+                                timestamp: Date.now(),
+                                lastSpin: new Date().toISOString()
+                            });
+        
+                            // Clear any previous result
+                            const resultElement = document.querySelector('#rouletteResult');
+                            if (resultElement) {
+                                resultElement.textContent = '';
+                            }
+        
+                            // Remove previous winning highlight if any
+                            document.querySelectorAll('.winning-sector').forEach(el => {
+                                el.classList.remove('winning-sector');
+                            });
+        
+                            const spinDuration = 4000;
+                            const winningIndex = Math.floor(Math.random() * rouletteData.totalNumbers);
+                            const winningNumber = rouletteData.numbers[winningIndex];
+                            const isJackpotWin = winningIndex === rouletteData.jackpotIndex;
+                            const wheelRotations = 10;
+                            const wheelFinalRotation = (wheelRotations * 360) + (360 - (winningIndex * rouletteData.anglePerSector));
+        
+                            wheel.style.transition = `transform ${spinDuration}ms cubic-bezier(0.2, 0, 0.2, 1)`;
+                            wheel.style.transform = `rotate(${wheelFinalRotation}deg)`;
+        
+                            setTimeout(() => {
+                                isSpinning = false;
+                                
+                                // Add winning highlight
+                                rouletteData.sectors[winningIndex].sector.classList.add('winning-sector');
+                                
+                                if (isJackpotWin) {
+                                    regularPoints += 2;
+                                    document.getElementById('regularPoints').textContent = regularPoints;
+                                } else {
+                                    starPoints += winningNumber;
+                                    document.getElementById('starPoints').textContent = starPoints;
+                                }
+        
+                                savePointsToDatabase();
+        
+                                setTimeout(() => {
+                                    const resultText = isJackpotWin ? 
+                                        'JACKPOT! You won 2 regular points!' : 
+                                        `You won ${winningNumber} star points!`;
+                                    
+                                    // Show alert
+                                    alert(isJackpotWin ? `JACKPOT!! You win 50 regular points!` : `Congratz!! You win ${winningNumber} Star points!`);
+                                    
+                                    // Update result text if element exists
+                                    const resultElement = document.querySelector('#rouletteResult');
+                                    if (resultElement) {
+                                        resultElement.textContent = resultText;
+                                    }
+        
+                                    // Trigger confetti
+                                    triggerConfetti();
+                                }, 100);
+                            }, spinDuration);
+                        });
+                    }
+        
+                    // Add functionality for Top 20 Players Button
+                    const top20Btn = document.getElementById('top20Btn');
+                    if (top20Btn) {
+                        top20Btn.addEventListener('click', showTop20Page);
+                    }
+        
+                    // Add conversion functionality
+                    function handleConversion() {
+                        if (starPoints >= 200) {
+                            const confirmConvert = confirm("Convert 200 star points to 15 regular points?");
+                            if (confirmConvert) {
+                                starPoints -= 200;
+                                regularPoints += 15;
+        
+                                // Update displays
+                                updatePointsDisplay();
+                                const availableStarPoints = document.getElementById('availableStarPoints');
+                                if (availableStarPoints) {
+                                    availableStarPoints.textContent = starPoints;
+                                }
+        
+                                // Update convert button state
+                                const convertBtn = document.getElementById('convertBtn');
+                                if (convertBtn) {
+                                    convertBtn.disabled = starPoints < 200;
+                                }
+        
+                                // Save to database
+                                savePointsToDatabase();
+        
+                                // Show success message
+                                alert("Successfully converted 200 star points to 15 regular points!");
+                            }
+                        } else {
+                            alert("You need at least 200 star points to convert!");
+                        }
+                    }
+        
+                    const convertBtn = document.getElementById('convertBtn');
+                    if (convertBtn) {
+                        convertBtn.addEventListener('click', handleConversion);
+                    }
+        
+                    // Modify handleDonation function to add bonus spin
+                    function handleDonation() {
+                        const recipientUsername = document.getElementById('donateUsername').value.trim();
+                        
+                        if (!recipientUsername) {
+                            alert("Please enter a recipient username!");
+                            return;
+                        }
+        
+                        if (recipientUsername === username) {
+                            alert("You cannot donate to yourself!");
+                            return;
+                        }
+        
+                        if (starPoints < 50) {
+                            alert("You need at least 50 star points to make a donation!");
+                            return;
+                        }
+        
+                        // Check if recipient exists
+                        const recipientRef = ref(db, 'userPoints/' + recipientUsername);
+                        get(recipientRef).then((snapshot) => {
+                            if(snapshot.exists()) {
+                                const confirmDonate = confirm(`Confirm donation to ${recipientUsername}?\nCost: 50 star points\nUser will receive: 25 star points\nBonus: You'll receive 1 free slot machine spin!`);
+                                if (confirmDonate) {
+                                    // Deduct points from donor
+                                    starPoints -= 50;
+                                    
+                                    // Add points to recipient
+                                    const recipientData = snapshot.val();
+                                    const recipientStarPoints = (recipientData.starPoints || 0) + 25;
+                                    
+                                    // Add bonus spin to donor
+                                    const bonusSpinRef = ref(db, 'bonusSpins/' + username);
+                                    set(bonusSpinRef, {
+                                        timestamp: Date.now(),
+                                        spinsRemaining: 1
+                                    });
+                                    
+                                    // Update recipient's points
+                                    set(recipientRef, {
+                                        ...recipientData,
+                                        starPoints: recipientStarPoints,
+                                        lastUpdated: Date.now()
+                                    }).then(() => {
+                                        // Update donor's points
+                                        savePointsToDatabase();
+                                        updatePointsDisplay();
+                                        updateDonationStatus();
+                                        
+                                        // Show success message
+                                        alert("Donation successful! You've received 1 free slot machine spin!");
+                                        
+                                        // Update spins remaining display
+                                        updateSpinsRemaining();
+                                        
+                                        // Clear input field
+                                        document.getElementById('donateUsername').value = '';
+                                    }).catch((error) => {
+                                        alert("Error processing donation: " + error.message);
+                                        // Rollback points if error occurs
+                                        starPoints += 50;
+                                        updatePointsDisplay();
+                                    });
+                                }
+                            } else {
+                                alert("Recipient username not found!");
+                            }
+                        }).catch((error) => {
+                            alert("Error checking recipient: " + error.message);
+                        });
+                    }
+        
+                    // Add event listener for donate button
+                    const donateBtn = document.getElementById('donateBtn');
+                    if (donateBtn) {
+                        donateBtn.addEventListener('click', handleDonation);
+                        updateDonationStatus(); // Initial status update
+                    }
+        
+                    // Update spins remaining display on page load
+                    updateSpinsRemaining();
+                    // Update the display every minute
+                    setInterval(updateSpinsRemaining, 60000);
+                }
+        
+                async function showTop20Page() {
+                    const userPointsRef = ref(db, 'userPoints');
+                    const snapshot = await get(userPointsRef);
+                    
+                    let players = [];
+                    if (snapshot.exists()) {
+                        snapshot.forEach((child) => {
+                            players.push({
+                                username: child.key,
+                                regularPoints: child.val().regularPoints || 0
+                            });
+                        });
+                        
+                        // Sort by regular points in descending order
+                        players.sort((a, b) => b.regularPoints - a.regularPoints);
+                        // Take only top 20
+                        players = players.slice(0, 20);
+                    }
+        
+                    const form = document.querySelector('.form');
+                    form.innerHTML = `
+                        <div class="user-info-container">
+                            <h2>Top 20 Players</h2>
+                            <div style="margin-top: 20px; color: #8f94fb;">
+                                ${players.map((player, index) => `
+                                    <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(78, 84, 200, 0.1); margin: 5px 0; border-radius: 5px;">
+                                        <span>#${index + 1} ${player.username}</span>
+                                        <span>${player.regularPoints} Points</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="sub" id="backBtn" style="margin-top: 20px;">Back to Main</button>
+                        </div>
+                    `;
+        
+                    // Add back button functionality
+                    document.getElementById('backBtn').addEventListener('click', async () => {
+                        const username = await getCurrentUsername();
+                        if (username) {
+                            showMainPage(username);
+                        }
+                    });
+                }
+        
+                function handleLogin(e) {
+                    e.preventDefault();
+                    
+                    const usernameInput = document.getElementById("username").value;
+                    const password = document.getElementById("password").value;
+        
+                    const userRef = ref(db, 'users/' + usernameInput);
+                    
+                    get(userRef).then((snapshot) => {
+                        if(snapshot.exists()) {
+                            const userData = snapshot.val();
+                            if(userData.password === password) {
+                                const loginLogRef = ref(db, 'loginLogs/' + usernameInput);
+                                set(loginLogRef, {
+                                    timestamp: Date.now(),
+                                    status: 'online'
+                                }).then(() => {
+                                    showMainPage(usernameInput); 
+                                }).catch((error) => {
+                                    alert("Error logging login: " + error.message);
+                                });
+                            } else {
+                                alert("Incorrect password!");
+                            }
+                        } else {
+                            alert("Username not found!");
+                        }
+                    }).catch((error) => {
+                        alert("Error during login: " + error.message);
+                    });
+                }
+        
+                function handleRegister(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById("newUsername").value;
+                    const password = document.getElementById("newPassword").value;
+        
+                    const userRef = ref(db, 'users/' + username);
+                    
+                    get(userRef).then((snapshot) => {
+                        if(snapshot.exists()) {
+                            alert("Username already exists!");
+                        } else {
+                            set(userRef, {
+                                username: username,
+                                password: password
+                            }).then(() => {
+                                alert("Registration successful! Please login.");
+                                showLoginForm();
+                            }).catch((error) => {
+                                alert("Error during registration: " + error.message);
+                            });
+                        }
+                    }).catch((error) => {
+                        alert("Error checking username: " + error.message);
+                    });
+                }
+        
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Check for existing session first
+                    checkExistingSession();
+                    
+                    // Then add the usual event listeners
+                    const loginForm = document.getElementById("loginForm");
+                    const registerLink = document.getElementById("registerLink");
+                    
+                    if (loginForm) {
+                        loginForm.addEventListener('submit', handleLogin);
+                    }
+                    
+                    if (registerLink) {
+                        registerLink.addEventListener('click', showRegisterForm);
+                    }
+                });
+        
+                // Add event listener for page unload to handle unexpected closures
+                window.addEventListener('beforeunload', function(e) {
+                    // Cancel the event
+                    e.preventDefault();
+                    // Chrome requires returnValue to be set
+                    e.returnValue = '';
+                });
+            </script>
+  </body>
+  </html>
